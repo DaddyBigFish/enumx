@@ -1,5 +1,6 @@
 # Install
-1. Clone script
-2. chmod +x enumx
-3. sudo mv enumx /usr/local/bin
-4. enumx <TARGET>
+1. git clone https://github.com/DaddyBigFish/enumx.git .git/enumx
+2. cd .git/enumx
+3. chmod +x enumx
+4. sudo mv enumx /usr/local/bin
+5. enumx <TARGET>
