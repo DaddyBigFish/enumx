@@ -1,0 +1,307 @@
+#!/bin/bash
+
+cat << "EOF"
+                                         /\__     __/\
+ ________ __   __   __    __   ___  ___  \   \   /   / 
+|   ____/|  \ |  | |  |  |  | |   \/   |  \   \ /   / 
+|  |___  |   \|  | |  |  |  | |  \  /  |   \   V   /
+|   __/  |  . `  | |  |  |  | |  |\/|  |    >     <
+|  |_____|  |\   | |  `--'  | |  |  |  |   /   .   \
+|_______/|__| \__|  \______/  |__|  |__|  /   / \   \ 
+                                         / __/   \__ \
+  Version: 1.0     Author: DaddyBigFish  \/         \/  
+ --------------   ----------------------       
+EOF
+
+# Usage
+if [ -z "$1" ]; then
+    echo "Usage: $0 <target>"
+    exit 1
+fi
+
+target=$1
+
+# Scan for open ports using nmap
+open_ports=$(nmap --open "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
+
+# By default commands are taken from book.hacktricks.xyz plus added to by community updates
+# Test each open port using pentesting techniques.
+for port in $open_ports; do
+    echo -e "\n━━━━━━━━━━━━━━━━━━━━━━━━━ PORT: $port"
+    case $port in
+        7)
+            # https://book.hacktricks.xyz/network-services-pentesting/7-tcp-udp-pentesting-echo
+            nc -uvn "$target" 7
+            ;;
+        21)
+            # https://www.netexec.wiki/ftp-protocol/file-listing-etc
+            nxc ftp "$target" -u 'anonymous' -p 'anonymous' --ls
+            mkdir -p /tmp/ftp
+            for x in $(curl -u anonymous:anonymous -l ftp://"$target")
+            do curl -u anonymous:anonymous -o "/tmp/ftp/$x" ftp://"$target/$x"
+            done
+            echo
+            echo -e "Authors / Creators of files found:"
+            exiftool /tmp/ftp/* | grep -v 'Tool' | grep -E 'Author|Creator' | awk '{print $3}' | sort -u
+            ;;
+        22)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ssh
+            ssh-keyscan -t rsa "$target" -p22
+            ;;
+        23)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-telnet
+            nmap -n -sV -Pn --script "*telnet* and safe" -p23 "$target"
+            ;;
+        25)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smtp
+            nmap -p25 --script smtp-open-relay "$target" -v
+            ;;
+        53)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-dns
+            dig axfr @"$target"
+            ;;
+        79)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-finger
+            msfconsole -q -x "use auxiliary/scanner/finger/finger_users; set RHOSTS $target; run; exit"
+            ;;
+        80)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web
+            whatweb "$target"
+            curl -Ik "$target"
+            ;;
+        88)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
+            dn=(nslookup -type=SRV _kerberos._tcp. "$target")
+            nmap -p 88 --script "krb5-enum-users" --script-args "krb5-enum-users.realm=$dn,userdb=/usr/share/seclists/Usernames/xato-net-10-million-usernames.txt" "$target"
+            ;;
+        110)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-pop
+            nmap --script "pop3-capabilities or pop3-ntlm-info" -sV -p 110 "$target"
+            ;;
+        111)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-rpcbind
+            rpcinfo -p "$target"
+            nmap -sSUC -p111 "$target"
+            ;;
+        113)
+            # https://book.hacktricks.xyz/network-services-pentesting/113-pentesting-ident
+            nmap "$target" -sC
+            ;;
+        135)
+            # https://book.hacktricks.xyz/network-services-pentesting/135-pentesting-msrpc
+            impacket-rpcdump -p 135 "$target" | grep -E 'Protocol|Provider' | grep -vE 'N/A|Interface' | awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}' | grep -E 'Remote'
+            ;;
+        139)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            nxc smb "$target" --port 139 -u '' -p '' --shares --groups --rid-brute
+            nbtscan "$target"/24
+            ;;
+        143)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
+            nmap -sV --script imap-brute -p 143 "$target"
+            ;;
+        389)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
+            ldapsearch -H "ldap://$target" -x -s base namingcontexts | grep 'namingcontexts' | awk '{print $2}' | grep -v 'requesting:'
+            nmap --script "ldap* and not brute" -p 389 "$target" | grep -E 'uid:|NTPassword' | awk '{print $3}'
+            nmap --script "ldap* and not brute" -p 389 "$target" | grep -vE 'Nmap|latency'
+            ;;
+        443)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web
+            echo | openssl s_client -connect "$target":443 2>/dev/null | openssl x509 -outform PEM
+            whatweb -a 4 "$target"
+            curl -Ik "$target"
+            ;;
+        445)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            netexec smb "$target" -u '' -p '' --shares --groups --rid-brute
+            nbtscan "$target"/24
+            ;;
+        465)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smtp
+            nmap -p465 --script smtp-open-relay "$target" -v
+            ;;
+        587)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smtp
+            nmap -p587 --script smtp-open-relay "$target" -v
+            ;;
+        593)
+            # https://book.hacktricks.xyz/network-services-pentesting/135-pentesting-msrpc
+            impacket-rpcdump -p 593 "$target" | grep -E 'Protocol|Provider' | grep -vE 'N/A|Interface' | awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}' | grep -E 'Remote'
+            ;;
+        623)
+            # https://book.hacktricks.xyz/network-services-pentesting/623-udp-ipmi
+            msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_dumphashes; set RHOSTS $target; set RPORT 623; run; exit"
+            ;;
+        631)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-631-internet-printing-protocol-ipp
+            lpinfo -v "$target"
+            ;;
+        636)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
+            ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep 'namingContexts' | awk '{print $2}'
+            nmap --script "ldap* and not brute" -p 636 "$target" | grep -E 'uid:|NTPassword' | awk '{print $3}'
+            nmap --script "ldap* and not brute" -p 636 "$target" | grep -vE 'Nmap|latency'
+            ;;
+        993)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
+            nmap -sV --script imap-brute -p 993 "$target"
+            ;;
+        995)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-pop
+            nmap --script "pop3-capabilities or pop3-ntlm-info" -sV -p 995 "$target"
+            ;;
+        1026)
+            # https://book.hacktricks.xyz/network-services-pentesting/1026-pentesting-rusersd
+            rusers -l "$target"
+            ;;
+        1433)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-mssql-microsoft-sql-server
+            nxc mssql "$target" -u 'anonymous' -p 'anonymous' -q "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;"
+            nxc mssql "$target" -u 'anonymous' -p 'anonymous' -x "whoami"
+            ;;
+        1521)
+            # https://book.hacktricks.xyz/network-services-pentesting/1521-1522-1529-pentesting-oracle-listener
+            odat all -s "$target"
+            ;;
+        1522)
+            # https://book.hacktricks.xyz/network-services-pentesting/1521-1522-1529-pentesting-oracle-listener
+            odat all -s "$target"
+            ;;
+        1529)
+            # https://book.hacktricks.xyz/network-services-pentesting/1521-1522-1529-pentesting-oracle-listener
+            odat all -s "$target"
+            ;;
+        2049)
+            # https://book.hacktricks.xyz/network-services-pentesting/nfs-service-pentesting
+            for x in $(showmount -e "$target" | awk '{print $1}' | grep -v 'Export')
+            do mkdir -p /tmp/mnt"$x"
+            sudo mount -t nfs "$target":"$x" /tmp/mnt"$x" -o nolock
+            tree -puga /tmp/mnt"$x"
+            done
+            ;;
+        3306)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-mysql
+            mysql -h "$target" -u root@localhost -e 'show databases;'
+            ;;
+        3389)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-rdp
+            nmap --script "rdp-enum-encryption or rdp-vuln-ms12-020 or rdp-ntlm-info" -p 3389 "$target"
+            ;;
+        5000)
+            # https://book.hacktricks.xyz/network-services-pentesting/5000-pentesting-docker-registry
+            curl -s http://"$target":5000/v2/_catalog
+            curl -s -k https://"$target":5000/v2/_catalog
+            ;;
+        5432)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-postgresql
+            psql -h "$target" -p 5432 -d postgres -U postgres
+            ;;
+        5433)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-postgresql
+            psql -h "$target" -p 5433 -d postgres -U postgres
+            ;;
+        5800)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-vnc
+            nmap -sV --script vnc-info,realvnc-auth-bypass,vnc-title -p 5800 "$target"
+            msfconsole -q -x "use auxiliary/scanner/vnc/vnc_none_auth; set RHOSTS $target; set RPORT 5800; run; exit"
+            ;;
+        5801)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-vnc
+            nmap -sV --script vnc-info,realvnc-auth-bypass,vnc-title -p 5801 "$target"
+            msfconsole -q -x "use auxiliary/scanner/vnc/vnc_none_auth; set RHOSTS $target; set RPORT 5801; run; exit"
+            ;;
+        5900)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-vnc
+            nmap -sV --script vnc-info,realvnc-auth-bypass,vnc-title -p 5900 "$target"
+            msfconsole -q -x "use auxiliary/scanner/vnc/vnc_none_auth; set RHOSTS $target; set RPORT 5900; run; exit"
+            ;;
+        5901)
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-vnc
+            nmap -sV --script vnc-info,realvnc-auth-bypass,vnc-title -p 5901 "$target"
+            msfconsole -q -x "use auxiliary/scanner/vnc/vnc_none_auth; set RHOSTS $target; set RPORT 5901; run; exit"
+            ;;
+        5984)
+            # https://book.hacktricks.xyz/network-services-pentesting/5984-pentesting-couchdb
+            nmap -sV --script couchdb-databases,couchdb-stats -p 5984 "$target"
+            msfconsole -q -x "use auxiliary/scanner/couchdb/couchdb_enum; set RHOSTS $target; set RPORT 5984; run; exit"
+            ;;
+        5985)
+            # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
+            wmic /node:"$target" process call create "powershell enable-psremoting -force"
+            ;;
+        5986)
+            # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
+            wmic /node:"$target" process call create "powershell enable-psremoting -force"
+            ;;
+        6000)
+            nmap -sV --script x11-access -p 6000 "$target"
+            msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_dumphashes; set RHOSTS $target; set RPORT 6000; run; exit"
+            ;;
+        6379)
+            # https://book.hacktricks.xyz/network-services-pentesting/6379-pentesting-redis
+            nmap --script redis-info -sV -p 6379 "$target"
+            msfconsole -q -x "use auxiliary/scanner/redis/redis_server; set RHOSTS $target; set RPORT 6379; run; exit"
+            ;;
+        6984)
+            # https://book.hacktricks.xyz/network-services-pentesting/5984-pentesting-couchdb
+            nmap -sV --script couchdb-databases,couchdb-stats -p 6984 "$target"
+            msfconsole -q -x "use auxiliary/scanner/x11/open_x11; set RHOSTS $target; set RPORT 6984; run; exit"
+            ;;
+        8009)
+            # https://book.hacktricks.xyz/network-services-pentesting/8009-pentesting-apache-jserv-protocol-ajp
+            nmap -sV --script ajp-auth,ajp-headers,ajp-methods,ajp-request -n -p 8009 "$target"
+            ;;
+        8080)
+            curl -I http://"$target":8080
+            ;;
+        8086)
+            # https://book.hacktricks.xyz/network-services-pentesting/8086-pentesting-influxdb
+            influx -host "$target" -port '8086'
+            ;;
+        9100)
+            # https://book.hacktricks.xyz/network-services-pentesting/9100-pjl
+            nc -vn "$target" 9100
+            ;;
+        9200)
+            # https://book.hacktricks.xyz/network-services-pentesting/9200-pentesting-elasticsearch
+            curl -X GET "http://$target:9200/"
+            curl -X GET "http://$target:9200/_security/role"
+            curl -X GET "http://$target:9200/_security/user"
+            curl -X GET "http://$target:9200/_security/user/admin"
+            ;;
+        10000)
+            # https://book.hacktricks.xyz/network-services-pentesting/10000-network-data-management-protocol-ndmp
+            nmap -n -sV --script "ndmp-fs-info or ndmp-version" -p 10000 "$target"
+            ;;
+        11211)
+            echo "version" | nc -vn -w 1 "$target" 11211
+            echo "stats" | nc -vn -w 1 "$target" 11211
+            echo "stats slabs" | nc -vn -w 1 "$target" 11211
+            echo "stats items" | nc -vn -w 1 "$target" 11211
+            echo "stats cachedump <number> 0" | nc -vn -w 1 "$target" 11211
+            echo "get <item_name>" | nc -vn -w 1 "$target" 11211
+            nmap -n -sV --script memcached-info -p 11211 "$target"
+            ;;
+        15672)
+            legba stomp --target "$target":15672 --username guest --password guest
+            ;;
+        27017)
+            # https://book.hacktricks.xyz/network-services-pentesting/27017-27018-mongodb
+            nmap -sV --script "mongo* and default" -p 27017 "$target"
+            ;;
+        27018)
+            # https://book.hacktricks.xyz/network-services-pentesting/27017-27018-mongodb
+            nmap -sV --script "mongo* and default" -p 27018 "$targt"
+            ;;
+        44818)
+            # https://book.hacktricks.xyz/network-services-pentesting/44818-ethernetip
+            nmap -n -sV --script enip-info -p 44818 "$target"
+            ;;
+        47808)
+            # https://book.hacktricks.xyz/network-services-pentesting/47808-udp-bacnet
+            nmap --script bacnet-info --script-args full=yes -sU -n -sV -p 47808 "$target"
+            ;;
+        *) echo "No test command for port $port";;
+    esac
+done
