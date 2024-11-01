@@ -37,8 +37,8 @@ for port in $open_ports; do
             # https://www.netexec.wiki/ftp-protocol/file-listing-etc
             nxc ftp "$target" -u 'anonymous' -p 'anonymous' --ls
             mkdir -p /tmp/ftp
-            for x in $(curl -u anonymous:anonymous -l ftp://"$target")
-            do curl -u anonymous:anonymous -o "/tmp/ftp/$x" ftp://"$target/$x"
+            for x in $(curl -s -u anonymous:anonymous -l ftp://"$target" 2>/dev/null)
+            do curl -s -u anonymous:anonymous -o "/tmp/ftp/$x" ftp://"$target/$x" 2>/dev/null
             done
             echo
             echo -e "Authors / Creators of files found:"
