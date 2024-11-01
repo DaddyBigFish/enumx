@@ -3,4 +3,4 @@
 2. `cd .git/enumx`
 3. `chmod +x enumx`
 4. `sudo mv enumx /usr/local/bin`
-5. `enumx <TARGET>`
+5. `enumx <TARGET> | tee enumx-output.txt`
