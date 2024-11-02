@@ -27,12 +27,18 @@ target=$1
 
 # Create the enumx working directory
 enumx_dir='/tmp/enumx'
-mkdir -p "$enumx_dir"
+mkdir -p "$enumx_dir/$target"
 
 # Create files for storing found data such as usernames, passwords, hashes and more
-touch "$enumx_dir"/usernames
-touch "$enumx_dir"/passwords
-touch "$enumx_dir"/hashes
+touch "$enumx_dir/$target"/usernames
+touch "$enumx_dir/$target"/passwords
+touch "$enumx_dir/$target"/hashes
+
+# Enter usernames and passwords if creds parameter is selected
+if [[ "$2" == "creds" ]]; then
+  nano "$enumx_dir/$target"/usernames
+  nano "$enumx_dir/$target"/passwords
+fi
 
 # Scan for open ports using nmap
 open_ports=$(nmap --open "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
@@ -79,10 +85,10 @@ for port in $open_ports; do
             ;;
         80)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web
-            whatweb "$target"
+            whatweb "http://$target:$port"
             echo
-            curl -Iks "$target" 2>/dev/null
-            wafw00f "$target" 2>/dev/null
+            curl -Iks "http://$target:$port" 2>/dev/null
+            wafw00f "http://$target:$port" 2>/dev/null
             ;;
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
@@ -143,6 +149,7 @@ for port in $open_ports; do
             echo
             curl -Iks "https://$target:$port" 2>/dev/null
             echo
+            echo | openssl s_client -connect "$target:$port" -servername "$target" 2>/dev/null | openssl x509 -text | grep 'CN=' | awk -F 'CN=|,' '{print $2}' | grep -viE 'DC|-'
             echo | openssl s_client -connect "$target:$port" -servername "$target" 2>/dev/null | openssl x509 -outform PEM
             wafw00f "https://$target:$port" 2>/dev/null
             ;;
