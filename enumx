@@ -97,9 +97,10 @@ for port in $open_ports; do
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
-            nxc smb "$target" --port "$port" -U "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
             nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
             nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4, $5, $6, $7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+            echo
             done
             echo
             nbtscan "$target"/24
@@ -130,9 +131,10 @@ for port in $open_ports; do
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
-            nxc smb "$target" --port "$port" -U "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
             nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
             nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4, $5, $6, $7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+            echo
             done
             echo
             nbtscan "$target"/24
