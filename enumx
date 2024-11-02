@@ -103,7 +103,7 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            mkdir -p "$enumx_dir"/smbclient/"$target"
+            mkdir -p "$enumx_dir"/smbclient/"$target" 2>/dev/null
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
@@ -117,7 +117,7 @@ for port in $open_ports; do
             do
             smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient/$target; recurse ON; prompt OFF; mget *" 2>/dev/null     
             done
-            tree "$enumx_dir"/smbclient/"$target" 2>/dev/null | grep -viE 'error|0 directories, 0 files'
+            tree "$enumx_dir"/smbclient/"$target" -fi 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
@@ -158,7 +158,7 @@ for port in $open_ports; do
             do
             smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient/$target; recurse ON; prompt OFF; mget *" 2>/dev/null     
             done
-            tree "$enumx_dir"/smbclient/"$target" 2>/dev/null | grep -viE 'error|0 directories, 0 files'
+            tree "$enumx_dir"/smbclient/"$target" -fi 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
