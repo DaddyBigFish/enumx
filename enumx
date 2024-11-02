@@ -13,6 +13,10 @@ cat << "EOF"
  --------------   ----------------------       
 EOF
 
+# Auto update to latest version
+git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
+chmod +x /tmp/.git/enumx/enumx
+
 # Usage information
 if [ -z "$1" ]; then
     echo "Usage: $0 <target>"
