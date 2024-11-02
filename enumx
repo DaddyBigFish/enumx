@@ -67,8 +67,9 @@ for port in $open_ports; do
         80)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web
             whatweb "$target"
-            curl -Ik "$target"
-            wafw00f "$target"
+            echo
+            curl -Iks "$target" 2>/dev/null
+            wafw00f "$target" 2>/dev/null
             ;;
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
@@ -112,10 +113,13 @@ for port in $open_ports; do
             nmap --script "ldap* and not brute" -p 389 "$target" | grep -vE 'Nmap|latency'
             ;;
         443)
-            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web
+            # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web          
+            whatweb "$target"
+            echo
+            curl -Iks "$target" 2>/dev/null
+            echo
             echo | openssl s_client -connect "$target":443 2>/dev/null | openssl x509 -outform PEM
-            whatweb -a 4 "$target"
-            curl -Ik "$target"
+            wafw00f "$target" 2>/dev/null
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
@@ -149,7 +153,7 @@ for port in $open_ports; do
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
             LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base dnshostname | grep 'dnshostname' | awk '{print $2}' | grep -v 'requesting:'
             echo
-            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep 'namingcontexts' | awk '{print $2}'
+            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep 'namingcontexts' | awk '{print $2}' | grep -v 'requesting:'
             nmap --script "ldap* and not brute" -p 636 "$target" | grep -E 'uid:|NTPassword' | awk '{print $3}'
             nmap --script "ldap* and not brute" -p 636 "$target" | grep -vE 'Nmap|latency'
             ;;
