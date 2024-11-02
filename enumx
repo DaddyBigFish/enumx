@@ -117,7 +117,7 @@ for port in $open_ports; do
             do
             smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient; recurse ON; prompt OFF; mget *" 2>/dev/null     
             done
-            tree "$enumx_dir"/smbclient > /dev/null 2>&1
+            tree "$enumx_dir"/smbclient 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
@@ -158,7 +158,7 @@ for port in $open_ports; do
             do
             smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient; recurse ON; prompt OFF; mget *" 2>/dev/null     
             done
-            tree "$enumx_dir"/smbclient > /dev/null 2>&1
+            tree "$enumx_dir"/smbclient 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
