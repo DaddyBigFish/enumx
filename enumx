@@ -131,16 +131,16 @@ for port in $open_ports; do
             echo
             ldapsearch -H "ldap://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
             nmap --script "ldap* and not brute" -p "$port" "$target" | grep -Ei 'uid:|NTPassword' | awk '{print $3}'
-            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency'
+            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency|supported' 
             ;;
         443)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web          
-            whatweb "$target":"$port"
+            whatweb "https://$target:$port"
             echo
-            curl -Iks "$target":"$port" 2>/dev/null
+            curl -Iks "https://$target:$port" 2>/dev/null
             echo
-            echo | openssl s_client -connect "$target":"$port" 2>/dev/null | openssl x509 -outform PEM
-            wafw00f "$target":"$port" 2>/dev/null
+            echo | openssl s_client -connect "$target:$port" -servername "$target" 2>/dev/null | openssl x509 -outform PEM
+            wafw00f "https://$target:$port" 2>/dev/null
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
@@ -188,7 +188,7 @@ for port in $open_ports; do
             echo
             LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
             nmap --script "ldap* and not brute" -p "$port" "$target" | grep -iE 'uid:|NTPassword' | awk '{print $3}'
-            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency'
+            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency|supported'
             ;;
         993)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
