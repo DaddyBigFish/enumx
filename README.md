@@ -1,9 +1,9 @@
 # Install
 In order to maintain auto update feature, please keep the file location as below
 ```
-git clone https://github.com/DaddyBigFish/enumx.git .git/enumx
-chmod +x .git/enumx/enumx
-sudo ln -s .git/enumx/enumx /usr/local/bin/enumx
+git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx
+chmod +x /tmp/.git/enumx/enumx
+sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx
 ```
 # Usage
 ```
