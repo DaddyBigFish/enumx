@@ -106,11 +106,11 @@ for port in $open_ports; do
             ;;
         389)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
-            ldapsearch -H "ldap://$target" -x -s base dnshostname | grep 'dnshostname' | awk '{print $2}' | grep -v 'requesting:'
+            ldapsearch -H "ldap://$target" -x -s base dnshostname | grep -i 'dnshostname' | awk '{print $2}' | grep -vi 'requesting:'
             echo
-            ldapsearch -H "ldap://$target" -x -s base namingcontexts | grep 'namingcontexts' | awk '{print $2}' | grep -v 'requesting:'
-            nmap --script "ldap* and not brute" -p 389 "$target" | grep -E 'uid:|NTPassword' | awk '{print $3}'
-            nmap --script "ldap* and not brute" -p 389 "$target" | grep -vE 'Nmap|latency'
+            ldapsearch -H "ldap://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
+            nmap --script "ldap* and not brute" -p 389 "$target" | grep -Ei 'uid:|NTPassword' | awk '{print $3}'
+            nmap --script "ldap* and not brute" -p 389 "$target" | grep -viE 'Nmap|latency'
             ;;
         443)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web          
@@ -139,7 +139,7 @@ for port in $open_ports; do
             ;;
         593)
             # https://book.hacktricks.xyz/network-services-pentesting/135-pentesting-msrpc
-            impacket-rpcdump -p 593 "$target" | grep -E 'Protocol|Provider' | grep -vE 'N/A|Interface' | awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}' | grep -E 'Remote'
+            impacket-rpcdump -p 593 "$target" | grep -Ei 'Protocol|Provider' | grep -vEi 'N/A|Interface' | awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}' | grep -Ei 'Remote'
             ;;
         623)
             # https://book.hacktricks.xyz/network-services-pentesting/623-udp-ipmi
@@ -151,11 +151,11 @@ for port in $open_ports; do
             ;;
         636)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
-            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base dnshostname | grep 'dnshostname' | awk '{print $2}' | grep -v 'requesting:'
+            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base dnshostname | grep -i 'dnshostname' | awk '{print $2}' | grep -vi 'requesting:'
             echo
-            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep 'namingcontexts' | awk '{print $2}' | grep -v 'requesting:'
-            nmap --script "ldap* and not brute" -p 636 "$target" | grep -E 'uid:|NTPassword' | awk '{print $3}'
-            nmap --script "ldap* and not brute" -p 636 "$target" | grep -vE 'Nmap|latency'
+            LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
+            nmap --script "ldap* and not brute" -p 636 "$target" | grep -iE 'uid:|NTPassword' | awk '{print $3}'
+            nmap --script "ldap* and not brute" -p 636 "$target" | grep -viE 'Nmap|latency'
             ;;
         993)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
