@@ -5,6 +5,14 @@
 4. `sudo mv enumx /usr/local/bin`
 5. `enumx <TARGET> | tee enumx-output.txt`
 
+# About
+My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘢 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘮𝘢𝘤𝘩𝘪𝘯𝘦).
+
+The tool 𝗲𝗻𝘂𝗺𝘅 is a framework that uses a plethora of existing tools as plugins in order to simplify and standardize the enumeration stage at a simplistic level. It is designed to automate the simpler tasks of enumeration in order to save the Penetration Tester valuable time. The goal with 𝗲𝗻𝘂𝗺𝘅 is that, after identifying what protocols are open and available, the tool will make varying enumerations by default based on well renown HackTricks and Exploit Notes knowledge bases and will also include more as the tool continues to develop.
+
+The future for the tool will include many more features such as utilizing known usernames and passwords in order to enumerate deeper and enumeration for receiving hashes that can be used for persistence and gaining footholds.
+
+Feel free to contribute to the project as there is so much more to come. You are more than welcome!
 
 # Examples
 This information is for demonstration purposes and is a Hack The Box retired machine.
