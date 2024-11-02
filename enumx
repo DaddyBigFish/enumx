@@ -73,6 +73,7 @@ for port in $open_ports; do
             ;;
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
+            nmap $target -p"$port" -sV --host-timeout 4s -T5 | grep -vE 'Nmap|latency|nmap'
             ;;
         110)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-pop
@@ -316,7 +317,7 @@ for port in $open_ports; do
             nmap --script bacnet-info --script-args full=yes -sU -n -sV -p 47808 "$target"
             ;;
         *)
-            nmap $target -p"$port" -sV | grep -vE 'Nmap|latency|nmap'
+            nmap $target -p"$port" -sV --host-timeout 4s -T5 | grep -vE 'Nmap|latency|nmap'
             ;;
     esac
 done
