@@ -13,13 +13,22 @@ cat << "EOF"
  --------------   ----------------------       
 EOF
 
-# Usage
+# Usage information
 if [ -z "$1" ]; then
     echo "Usage: $0 <target>"
     exit 1
 fi
 
 target=$1
+
+# Create the enumx working directory
+enumx_dir='/tmp/enumx'
+mkdir -p "$enumx_dir"
+
+# Create files for storing found data such as usernames, passwords, hashes and more
+touch "$enumx_dir"/usernames
+touch "$enumx_dir"/passwords
+touch "$enumx_dir"/hashes
 
 # Scan for open ports using nmap
 open_ports=$(nmap --open "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
@@ -36,13 +45,13 @@ for port in $open_ports; do
         21)
             # https://www.netexec.wiki/ftp-protocol/file-listing-etc
             nxc ftp "$target" -u 'anonymous' -p 'anonymous' --ls
-            mkdir -p /tmp/ftp
+            mkdir -p "$enumx_dir"/ftp
             for x in $(curl -s -u anonymous:anonymous -l ftp://"$target" 2>/dev/null)
-            do curl -s -u anonymous:anonymous -o "/tmp/ftp/$x" ftp://"$target/$x" 2>/dev/null
+            do curl -s -u anonymous:anonymous -o "$enumx_dir/ftp/$x" ftp://"$target/$x" 2>/dev/null
             done
             echo
             echo -e "Authors / Creators of files found:"
-            exiftool /tmp/ftp/* | grep -v 'Tool' | grep -E 'Author|Creator' | awk '{print $3}' | sort -u
+            exiftool "$enumx_dir"/ftp/* | grep -v 'Tool' | grep -E 'Author|Creator' | awk '{print $3}' | sort -u
             ;;
         22)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ssh
@@ -94,14 +103,21 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            mkdir -p "$enumx_dir"/smbclient
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
-            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+            shares=($(nxc smb "$target" --port "$port" -u "$user" -p '' --shares | grep -iE 'READ|Write' | awk '{print $5}'))
             nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4, $5, $6, $7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
             echo
             done
+            for share in "${shares[@]}"
+            do
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient; recurse ON; prompt OFF; mget *" 2>/dev/null     
+            done
+            tree "$enumx_dir"/smbclient 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
@@ -128,14 +144,21 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            mkdir -p "$enumx_dir"/smbclient
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
-            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4, $5, $6, $7" "$8" "$9" "$10}' | grep -vE '[*]'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+            shares=($(nxc smb "$target" --port "$port" -u "$user" -p '' --shares | grep -iE 'READ|Write' | awk '{print $5}'))
             nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4, $5, $6, $7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
             echo
             done
+            for share in "${shares[@]}"
+            do
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient; recurse ON; prompt OFF; mget *" 2>/dev/null     
+            done
+            tree "$enumx_dir"/smbclient 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
@@ -199,9 +222,9 @@ for port in $open_ports; do
         2049)
             # https://book.hacktricks.xyz/network-services-pentesting/nfs-service-pentesting
             for x in $(showmount -e "$target" | awk '{print $1}' | grep -v 'Export')
-            do mkdir -p /tmp/mnt"$x"
-            sudo mount -t nfs "$target":"$x" /tmp/mnt"$x" -o nolock
-            tree -puga /tmp/mnt"$x"
+            do mkdir -p "$enumx_dir"/mnt"$x"
+            sudo mount -t nfs "$target":"$x" "$enumx_dir"/mnt"$x" -o nolock
+            tree -puga "$enumx_dir"/mnt"$x"
             done
             ;;
         3306)
