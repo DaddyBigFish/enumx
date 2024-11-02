@@ -103,7 +103,7 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            mkdir -p "$enumx_dir"/smbclient/"$target" 2>/dev/null
+            mkdir -p "$enumx_dir"/smb/"$target" 2>/dev/null
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
@@ -115,9 +115,9 @@ for port in $open_ports; do
             done
             for share in "${shares[@]}"
             do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient/$target; recurse ON; prompt OFF; mget *" 2>/dev/null     
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb/$target; recurse ON; prompt OFF; mget *" 2>/dev/null
             done
-            tree "$enumx_dir"/smbclient/"$target" -fi --noreport 2>/dev/null | sed '1d'
+            tree "$enumx_dir"/smb/"$target" -fi --noreport 2>/dev/null | sed '1d'
             echo
             nbtscan "$target"/24
             ;;
@@ -144,7 +144,7 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            mkdir -p "$enumx_dir"/smbclient
+            mkdir -p "$enumx_dir"/smb
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
@@ -156,9 +156,9 @@ for port in $open_ports; do
             done
             for share in "${shares[@]}"
             do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smbclient/$target; recurse ON; prompt OFF; mget *" 2>/dev/null     
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb/$target; recurse ON; prompt OFF; mget *" 2>/dev/null
             done
-            tree "$enumx_dir"/smbclient/"$target" -fi --noreport 2>/dev/null | sed '1d'
+            tree "$enumx_dir"/smb/"$target" -fi --noreport 2>/dev/null | sed '1d'
             echo
             nbtscan "$target"/24
             ;;
