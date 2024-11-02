@@ -3,6 +3,9 @@
 git clone https://github.com/DaddyBigFish/enumx.git .git/enumx
 chmod +x .git/enumx/enumx
 sudo ln -s .git/enumx/enumx /usr/local/bin/enumx
+```
+# Usage
+```
 enumx <TARGET> | tee enumx-output.txt
 ```
 # About
