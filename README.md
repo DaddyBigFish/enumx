@@ -1,10 +1,10 @@
 # Install
-1. `git clone https://github.com/DaddyBigFish/enumx.git .git/enumx`
-2. `cd .git/enumx`
-3. `chmod +x enumx`
-4. `sudo mv enumx /usr/local/bin`
-5. `enumx <TARGET> | tee enumx-output.txt`
-
+```
+git clone https://github.com/DaddyBigFish/enumx.git .git/enumx
+chmod +x .git/enumx/enumx
+sudo ln -s .git/enumx/enumx /usr/local/bin/enumx
+enumx <TARGET> | tee enumx-output.txt
+```
 # About
 My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘢 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘮𝘢𝘤𝘩𝘪𝘯𝘦).
 
