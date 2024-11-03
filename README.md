@@ -26,7 +26,7 @@ This information is for demonstration purposes and is a Hack The Box retired mac
 ![image](https://github.com/user-attachments/assets/e43c34b9-7ccb-476c-be75-4244659fefc4)
 ![image](https://github.com/user-attachments/assets/9eec73a4-141d-454b-ab2e-139dd5ded762)
 ![image](https://github.com/user-attachments/assets/327ef258-869b-4d3d-8649-a85260a0eb77)
-
+![image](https://github.com/user-attachments/assets/94526baf-9c6d-41b4-874f-40dcb7f13584)
 
 
 
