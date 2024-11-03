@@ -31,7 +31,6 @@ if [ -z "$1" ]; then
     exit 1
 fi
 
-
 target=$1
 
 # Create the enumx working directory
