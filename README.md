@@ -1,5 +1,5 @@
 # Install
-In order to maintain auto update feature, please keep the file location as below
+In order to maintain auto update feature 'sudo' is required.
 ```
 git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx
 chmod +x /tmp/.git/enumx/enumx
