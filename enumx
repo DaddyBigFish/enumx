@@ -37,7 +37,7 @@ target=$1
 enumx_dir="/tmp/enumx/$target"
 mkdir -p "$enumx_dir"
 
-# Create files for storing found data such as usernames, passwords, hashes and more
+# Create files for storing found data such as usernames, passwords, hashes, creds and more
 touch "$enumx_dir"/usernames
 sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
 if [ ! -s "$enumx_dir/usernames" ]; then
@@ -48,10 +48,15 @@ touch "$enumx_dir"/passwords
 sort -u "$enumx_dir"/passwords -o "$enumx_dir"/passwords 2>/dev/null
 touch "$enumx_dir"/hashes
 sort -u "$enumx_dir"/hashes -o "$enumx_dir"/hashes 2>/dev/null
+touch "$enumx_dir"/creds
+sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+
+
 # Enter usernames and passwords if creds parameter is selected
 if [[ "$2" == "creds" ]]; then
   nano "$enumx_dir"/usernames
   nano "$enumx_dir"/passwords
+  nano "$enumx_dir"/creds
   using_creds=true
 fi
 
@@ -130,10 +135,11 @@ for port in $open_ports; do
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             mkdir -p "$enumx_dir"/smb 2>/dev/null
             if [ "$using_creds" == true ]; then
-                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares)
+                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares --continue-on-success)
                 groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
                 ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
+                echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
                 echo
@@ -198,6 +204,7 @@ for port in $open_ports; do
                 groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
                 ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
+                echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
                 echo
