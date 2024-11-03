@@ -14,8 +14,10 @@ cat << "EOF"
 EOF
 
 # Auto update to latest version
+rm -rf /tmp/.git/enumx 2>/dev/null
 git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
-chmod +x /tmp/.git/enumx/enumx
+chmod +x /tmp/.git/enumx/enumx 2>/dev/null
+sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
 
 # Usage information
 if [ -z "$1" ]; then
