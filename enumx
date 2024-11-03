@@ -13,10 +13,12 @@ cat << "EOF"
 EOF
 # Update to latest version
 if [[ "$1" == "update" ]]; then
+    echo '     Updating to latest version...'
     rm -rf /tmp/.git/enumx 2>/dev/null
     git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
     chmod +x /tmp/.git/enumx/enumx 2>/dev/null
     sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
+    echo '     Update complete.'
     exit 1
 fi
 
