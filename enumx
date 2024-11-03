@@ -11,6 +11,21 @@ cat << "EOF"
   Version: 1.0     Author: DaddyBigFish  \/         \/  
  --------------   ----------------------       
 EOF
+# Required tools to be pre-installed:
+#  cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl
+#  mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap
+#  odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind
+#  smbclient tree wafw00f whatweb
+
+# Usage information
+if [ -z "$1" ]; then
+    echo "  Examples:"
+    echo "    enumx <target>                - Run enumeration on the specified target."
+    echo "    enumx <target> creds          - Run enumeration on the specified target using specific usernames and passwords."
+    echo "    enumx update                  - Update to the latest version of enumx."
+    echo "    enumx install                 - Install the pre-required tools for enumx (Kali Linux / Debian)."
+    exit 1
+fi
 # Update to latest version
 if [[ "$1" == "update" ]]; then
     echo '     Updating to latest version...'
@@ -21,15 +36,16 @@ if [[ "$1" == "update" ]]; then
     echo '     Update complete.'
     exit 1
 fi
-
-# Usage information
-if [ -z "$1" ]; then
-    echo "  Examples:"
-    echo "    enumx <target>                - Run enumeration on the specified target."
-    echo "    enumx <target> creds          - Run enumeration on the specified target using specific usernames and passwords."
-    echo "    enumx update                  - Update to the latest version of enumx."
+# Install the pre-required tools (Kali Linux / Debian)
+if [[ "$1" == "install" ]]; then
+    echo 'Installing pre-required tools for Kali Linux / Debian....'
+    sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb
+    echo '     Install complete.'
     exit 1
 fi
+
+
+sudo apt update && sudo apt install -y curl cups dnsutils git inetutils-ftp metasploit-framework rpcbind nano odat mysql-server postgresql postgresql-contrib influxdb legba nmap netcat netexec ldap-utils openssl openssh-client netkit-ruser samba-client tree nbtscan nfs-common python3-impacket exiftool whatweb wafw00f
 
 target=$1
 
@@ -141,7 +157,7 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
                 echo
@@ -206,7 +222,7 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
                 echo
@@ -360,17 +376,17 @@ for port in $open_ports; do
             ;;
         6000)
             nmap -sV --script x11-access -p "$port" "$target"
-            msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_dumphashes; set RHOSTS $target; set RPORT 6000; run; exit"
+            msfconsole -q -x "use auxiliary/scanner/ipmi/ipmi_dumphashes; set RHOSTS $target; set RPORT $port; run; exit"
             ;;
         6379)
             # https://book.hacktricks.xyz/network-services-pentesting/6379-pentesting-redis
             nmap --script redis-info -sV -p "$port" "$target"
-            msfconsole -q -x "use auxiliary/scanner/redis/redis_server; set RHOSTS $target; set RPORT 6379; run; exit"
+            msfconsole -q -x "use auxiliary/scanner/redis/redis_server; set RHOSTS $target; set RPORT $port; run; exit"
             ;;
         6984)
             # https://book.hacktricks.xyz/network-services-pentesting/5984-pentesting-couchdb
             nmap -sV --script couchdb-databases,couchdb-stats -p "$port" "$target"
-            msfconsole -q -x "use auxiliary/scanner/x11/open_x11; set RHOSTS $target; set RPORT 6984; run; exit"
+            msfconsole -q -x "use auxiliary/scanner/x11/open_x11; set RHOSTS $target; set RPORT $port; run; exit"
             ;;
         8009)
             # https://book.hacktricks.xyz/network-services-pentesting/8009-pentesting-apache-jserv-protocol-ajp
