@@ -4,6 +4,10 @@ git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx
 chmod +x /tmp/.git/enumx/enumx
 sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx
 ```
+# Pre-required tools installation (Kali Linux / Debian)
+```
+sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb
+```
 # Usage
 ```
 enumx <TARGET> | tee enumx-output.txt
