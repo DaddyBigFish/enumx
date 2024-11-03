@@ -40,13 +40,15 @@ mkdir -p "$enumx_dir"
 
 # Create files for storing found data such as usernames, passwords, hashes and more
 touch "$enumx_dir"/usernames
+sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
 if [ ! -s "$enumx_dir/usernames" ]; then
     echo "" >> "$enumx_dir/usernames"
     echo "guest" >> "$enumx_dir/usernames"
 fi
 touch "$enumx_dir"/passwords
+sort -u "$enumx_dir"/passwords -o "$enumx_dir"/passwords 2>/dev/null
 touch "$enumx_dir"/hashes
-
+sort -u "$enumx_dir"/hashes -o "$enumx_dir"/hashes 2>/dev/null
 # Enter usernames and passwords if creds parameter is selected
 if [[ "$2" == "creds" ]]; then
   nano "$enumx_dir"/usernames
@@ -128,8 +130,6 @@ for port in $open_ports; do
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-      	    #u=($(< "$enumx_dir/usernames"))
-	    #p=($(< "$enumx_dir/passwords"))
             if [ "$using_creds" == true ]; then
                 shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares)
                 groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
@@ -141,6 +141,8 @@ for port in $open_ports; do
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                echo
+                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
                 echo
                 for share in "${list_shares[@]}"; do
                     echo "Authenticating as $credu:$credp on share $share..."
@@ -192,10 +194,8 @@ for port in $open_ports; do
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-      	    #u=($(< "$enumx_dir/usernames"))
-	    #p=($(< "$enumx_dir/passwords"))
             if [ "$using_creds" == true ]; then
-                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares)
+                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares --continue-on-success)
                 groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
                 ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
@@ -205,6 +205,8 @@ for port in $open_ports; do
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                echo
+                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
                 echo
                 for share in "${list_shares[@]}"; do
                     echo "Authenticating as $credu:$credp on share $share..."
