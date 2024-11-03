@@ -11,11 +11,13 @@ cat << "EOF"
   Version: 1.0     Author: DaddyBigFish  \/         \/  
  --------------   ----------------------       
 EOF
-# Auto update to latest version
-rm -rf /tmp/.git/enumx 2>/dev/null
-git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
-chmod +x /tmp/.git/enumx/enumx 2>/dev/null
-sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
+# Update to latest version
+if [[ "$1" == "update" ]]; then
+    rm -rf /tmp/.git/enumx 2>/dev/null
+    git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
+    chmod +x /tmp/.git/enumx/enumx 2>/dev/null
+    sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
+fi
 
 # Usage information
 if [ -z "$1" ]; then
