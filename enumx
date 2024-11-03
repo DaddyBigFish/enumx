@@ -17,6 +17,7 @@ if [[ "$1" == "update" ]]; then
     git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
     chmod +x /tmp/.git/enumx/enumx 2>/dev/null
     sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
+    exit 1
 fi
 
 # Usage information
