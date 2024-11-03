@@ -28,18 +28,18 @@ fi
 target=$1
 
 # Create the enumx working directory
-enumx_dir='/tmp/enumx'
-mkdir -p "$enumx_dir/$target"
+enumx_dir="/tmp/enumx/$1"
+mkdir -p "$enumx_dir"
 
 # Create files for storing found data such as usernames, passwords, hashes and more
-touch "$enumx_dir/$target"/usernames
-touch "$enumx_dir/$target"/passwords
-touch "$enumx_dir/$target"/hashes
+touch "$enumx_dir"/usernames
+touch "$enumx_dir"/passwords
+touch "$enumx_dir"/hashes
 
 # Enter usernames and passwords if creds parameter is selected
 if [[ "$2" == "creds" ]]; then
-  nano "$enumx_dir/$target"/usernames
-  nano "$enumx_dir/$target"/passwords
+  nano "$enumx_dir"/usernames
+  nano "$enumx_dir"/passwords
 fi
 
 # Scan for open ports using nmap
@@ -115,7 +115,7 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            mkdir -p "$enumx_dir"/smb/"$target" 2>/dev/null
+            mkdir -p "$enumx_dir"/smb 2>/dev/null
             user_list=("guest" "")
             for user in "${user_list[@]}"
             do
@@ -127,9 +127,9 @@ for port in $open_ports; do
             done
             for share in "${shares[@]}"
             do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb/$target; recurse ON; prompt OFF; mget *" 2>/dev/null
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
             done
-            find "$enumx_dir"/smb/"$target" -type f 2>/dev/null
+            find "$enumx_dir"/smb -type f 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
@@ -169,9 +169,9 @@ for port in $open_ports; do
             done
             for share in "${shares[@]}"
             do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb/$target; recurse ON; prompt OFF; mget *" 2>/dev/null
+            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
             done
-            find "$enumx_dir"/smb/"$target" -type f 2>/dev/null
+            find "$enumx_dir"/smb -type f 2>/dev/null
             echo
             nbtscan "$target"/24
             ;;
