@@ -31,11 +31,15 @@ fi
 target=$1
 
 # Create the enumx working directory
-enumx_dir="/tmp/enumx/$1"
+enumx_dir="/tmp/enumx/$target"
 mkdir -p "$enumx_dir"
 
 # Create files for storing found data such as usernames, passwords, hashes and more
 touch "$enumx_dir"/usernames
+if [ ! -s "$enumx_dir/usernames" ]; then
+    echo "" >> "$enumx_dir/usernames"
+    echo "guest" >> "$enumx_dir/usernames"
+fi
 touch "$enumx_dir"/passwords
 touch "$enumx_dir"/hashes
 
@@ -43,6 +47,7 @@ touch "$enumx_dir"/hashes
 if [[ "$2" == "creds" ]]; then
   nano "$enumx_dir"/usernames
   nano "$enumx_dir"/passwords
+  using_creds=true
 fi
 
 # Scan for open ports using nmap
@@ -119,19 +124,38 @@ for port in $open_ports; do
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-            user_list=("guest" "")
-            for user in "${user_list[@]}"
-            do
-            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-            shares=($(nxc smb "$target" --port "$port" -u "$user" -p '' --shares | grep -iE 'READ|Write' | awk '{print $5}'))
-            nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
-            echo
-            done
-            for share in "${shares[@]}"
-            do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
-            done
+      	    #u=($(< "$enumx_dir/usernames"))
+	    #p=($(< "$enumx_dir/passwords"))
+            if [ "$using_creds" == true ]; then
+                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares)
+                groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
+                ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
+                read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
+                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                for share in "${list_shares[@]}"; do
+                    echo "Authenticating as $credu:$credp on share $share..."
+                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+		done
+            else
+                default_usernames=("guest" "")
+                for user in "${default_usernames[@]}"
+                do
+                shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
+                groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
+                ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
+                creds=$(echo $shares | grep -iE '[+]' | awk '{print $6}' | sed 's/^[^\\]*\\//; s/:/%/')
+                list_shares=($(echo $shares | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo $shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo $groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo $ridbrute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                done
+                for share in "${list_shares[@]}"; do
+	        smbclient "//$target/$share" -U "$creds" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
+	        done
+	    fi
             find "$enumx_dir"/smb -type f 2>/dev/null
             echo
             nbtscan "$target"/24
@@ -160,20 +184,40 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            mkdir -p "$enumx_dir"/smb
-            user_list=("guest" "")
-            for user in "${user_list[@]}"
-            do
-            nxc smb "$target" --port "$port" -u "$user" -p '' --shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-            shares=($(nxc smb "$target" --port "$port" -u "$user" -p '' --shares | grep -iE 'READ|Write' | awk '{print $5}'))
-            nxc smb "$target" --port "$port" -u "$user" -p '' --groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-            nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
-            echo
-            done
-            for share in "${shares[@]}"
-            do
-            smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
-            done
+            mkdir -p "$enumx_dir"/smb 2>/dev/null
+      	    #u=($(< "$enumx_dir/usernames"))
+	    #p=($(< "$enumx_dir/passwords"))
+            if [ "$using_creds" == true ]; then
+                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares)
+                groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
+                ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
+                read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
+                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                for share in "${list_shares[@]}"; do
+                    echo "Authenticating as $credu:$credp on share $share..."
+                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+		done
+            else
+                default_usernames=("guest" "")
+                for user in "${default_usernames[@]}"
+                do
+                shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
+                groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
+                ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
+                creds=$(echo $shares | grep -iE '[+]' | awk '{print $6}' | sed 's/^[^\\]*\\//; s/:/%/')
+                list_shares=($(echo $shares | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo $shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo $groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo $ridbrute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                done
+                for share in "${list_shares[@]}"; do
+	        smbclient "//$target/$share" -U "$creds" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+	        done
+	    fi
+            tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
             echo
             nbtscan "$target"/24
