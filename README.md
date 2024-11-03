@@ -7,6 +7,7 @@ sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx
 # Usage
 ```
 enumx <TARGET> | tee enumx-output.txt
+enumx <TARGET> creds | tee enumx-output.txt
 enumx update
 ```
 # About
