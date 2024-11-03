@@ -11,10 +11,6 @@ cat << "EOF"
   Version: 1.0     Author: DaddyBigFish  \/         \/  
  --------------   ----------------------       
 EOF
-echo
-echo '  sudo is only required by the auto-update feature'
-echo '  to re-create the symlink in /usr/local/bin'
-echo
 # Auto update to latest version
 rm -rf /tmp/.git/enumx 2>/dev/null
 git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx 2>/dev/null
