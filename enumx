@@ -24,9 +24,13 @@ fi
 
 # Usage information
 if [ -z "$1" ]; then
-    echo "Usage: $0 <target>"
+    echo "  Examples:"
+    echo "    enumx <target>                - Run enumeration on the specified target."
+    echo "    enumx <target> creds          - Run enumeration on the specified target using specific usernames and passwords."
+    echo "    enumx update                  - Update to the latest version of enumx."
     exit 1
 fi
+
 
 target=$1
 
@@ -146,16 +150,16 @@ for port in $open_ports; do
                 shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
                 groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
                 ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
-                creds=$(echo $shares | grep -iE '[+]' | awk '{print $6}' | sed 's/^[^\\]*\\//; s/:/%/')
-                list_shares=($(echo $shares | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo $shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-                echo $groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-                echo $ridbrute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
                 done
                 for share in "${list_shares[@]}"; do
-	        smbclient "//$target/$share" -U "$creds" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" 2>/dev/null
+                    smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
 	        done
 	    fi
+            tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
             echo
             nbtscan "$target"/24
@@ -207,14 +211,13 @@ for port in $open_ports; do
                 shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
                 groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
                 ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
-                creds=$(echo $shares | grep -iE '[+]' | awk '{print $6}' | sed 's/^[^\\]*\\//; s/:/%/')
-                list_shares=($(echo $shares | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo $shares | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-                echo $groups | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-                echo $ridbrute | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
                 done
                 for share in "${list_shares[@]}"; do
-	        smbclient "//$target/$share" -U "$creds" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+                    smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
 	        done
 	    fi
             tree "$enumx_dir"/smb 2>/dev/null
