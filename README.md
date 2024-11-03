@@ -13,6 +13,7 @@ sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils lib
 enumx <TARGET> | tee enumx-output.txt
 enumx <TARGET> creds | tee enumx-output.txt
 enumx update
+enumx install
 ```
 # About
 My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘢 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘮𝘢𝘤𝘩𝘪𝘯𝘦).
