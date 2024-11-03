@@ -137,8 +137,11 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo
                 echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                echo
                 for share in "${list_shares[@]}"; do
                     echo "Authenticating as $credu:$credp on share $share..."
                     smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
@@ -198,8 +201,11 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
+                echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+                echo
                 echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+                echo
                 for share in "${list_shares[@]}"; do
                     echo "Authenticating as $credu:$credp on share $share..."
                     smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
