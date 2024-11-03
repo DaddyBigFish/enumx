@@ -44,9 +44,6 @@ if [[ "$1" == "install" ]]; then
     exit 1
 fi
 
-
-sudo apt update && sudo apt install -y curl cups dnsutils git inetutils-ftp metasploit-framework rpcbind nano odat mysql-server postgresql postgresql-contrib influxdb legba nmap netcat netexec ldap-utils openssl openssh-client netkit-ruser samba-client tree nbtscan nfs-common python3-impacket exiftool whatweb wafw00f
-
 target=$1
 
 # Create the enumx working directory
