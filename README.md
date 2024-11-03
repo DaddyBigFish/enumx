@@ -1,5 +1,5 @@
 # Install
-In order to maintain auto update feature 'sudo' is required to re-create symlink
+In order to maintain auto update feature 'sudo' is required to re-create symlink.
 ```
 git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx
 chmod +x /tmp/.git/enumx/enumx
