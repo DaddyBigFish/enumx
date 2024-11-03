@@ -1,5 +1,4 @@
 # Install
-In order to maintain auto-update feature `sudo` is required only to re-create the symlink in `/usr/local/bin`.
 ```
 git clone https://github.com/DaddyBigFish/enumx.git /tmp/.git/enumx
 chmod +x /tmp/.git/enumx/enumx
@@ -8,6 +7,7 @@ sudo ln -s /tmp/.git/enumx/enumx /usr/local/bin/enumx
 # Usage
 ```
 enumx <TARGET> | tee enumx-output.txt
+enumx update
 ```
 # About
 My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘢 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘮𝘢𝘤𝘩𝘪𝘯𝘦).
