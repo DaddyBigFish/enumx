@@ -92,7 +92,7 @@ fi
 
 
 # Scan for open ports using nmap
-open_ports=$(nmap --open "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
+open_ports=$(nmap --open --min-rate 10000 "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
 
 # By default commands are taken from book.hacktricks.xyz plus added to by community updates
 # Test each open port using pentesting techniques.
@@ -178,7 +178,9 @@ for port in $open_ports; do
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
+          		echo
   		        echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+  		        echo
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
@@ -250,7 +252,9 @@ for port in $open_ports; do
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
+          		echo
   		        echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+  		        echo
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
