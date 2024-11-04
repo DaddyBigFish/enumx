@@ -174,7 +174,7 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            echo 'Enumerating SMB can take some time please wait...'
+            echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
