@@ -28,13 +28,13 @@ Feel free to contribute to the project as there is so much more to come. You are
 This information is for demonstration purposes and is a Hack The Box retired machine.
 
 ![image](https://github.com/user-attachments/assets/5bb095ca-35ff-4496-9de7-632a8b0d335d)
+![image](https://github.com/user-attachments/assets/7a6a1c00-7cc9-4006-8f58-52baa928118c)
 ![image](https://github.com/user-attachments/assets/e43c34b9-7ccb-476c-be75-4244659fefc4)
 ![image](https://github.com/user-attachments/assets/9eec73a4-141d-454b-ab2e-139dd5ded762)
 ![image](https://github.com/user-attachments/assets/d59ca568-6182-423f-a038-74139f8f1983)
 ![image](https://github.com/user-attachments/assets/327ef258-869b-4d3d-8649-a85260a0eb77)
 ![image](https://github.com/user-attachments/assets/94526baf-9c6d-41b4-874f-40dcb7f13584)
 ![image](https://github.com/user-attachments/assets/7b52df8f-6e24-40d5-9693-5c5975d17514)
-![image](https://github.com/user-attachments/assets/7a6a1c00-7cc9-4006-8f58-52baa928118c)
 
 
 
