@@ -130,7 +130,7 @@ for port in $open_ports; do
             nmap $target -p"$port" --host-timeout 3s -T5 | grep -vE 'Nmap|latency|nmap' | sed '1d'
             if [ -s "$enumx_dir/domains" ]; then
                 for domain in $(cat "$enumx_dir/domains"); do
-                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target"
+                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -viE '[-]' 2>/dev/null
                 done
             fi
             ;;
