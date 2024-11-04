@@ -12,6 +12,7 @@ sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils lib
 ```
 enumx <TARGET> | tee enumx-output.txt
 enumx <TARGET> creds | tee enumx-output.txt
+enumx <TARGET> crack
 enumx update
 enumx install
 ```
@@ -35,6 +36,8 @@ This information is for demonstration purposes and is a Hack The Box retired mac
 ![image](https://github.com/user-attachments/assets/327ef258-869b-4d3d-8649-a85260a0eb77)
 ![image](https://github.com/user-attachments/assets/94526baf-9c6d-41b4-874f-40dcb7f13584)
 ![image](https://github.com/user-attachments/assets/7b52df8f-6e24-40d5-9693-5c5975d17514)
+## Quick crack hashes with 15 second limit each
+![image](https://github.com/user-attachments/assets/45d9bb24-138e-404d-a8f1-9ba61aa3acc8)
 
 
 
