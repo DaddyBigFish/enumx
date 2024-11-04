@@ -178,8 +178,8 @@ for port in $open_ports; do
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
-  		            echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
-  		            sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+  		        echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+  		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
@@ -250,8 +250,8 @@ for port in $open_ports; do
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
           		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success)
-  		            echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
-  		            sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+  		        echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+  		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	for cred in $(cat "$enumx_dir"/creds); do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
