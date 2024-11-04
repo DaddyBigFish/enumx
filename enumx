@@ -40,7 +40,7 @@ fi
 if [[ "$1" == "install" ]]; then
     echo 'Installing pre-required tools for enumx (Kali Linux / Debian)...'
     sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb
-    echo '     Install complete.'
+    echo 'Install complete.'
     exit 1
 fi
 
@@ -63,6 +63,8 @@ touch "$enumx_dir"/hashes
 sort -u "$enumx_dir"/hashes -o "$enumx_dir"/hashes 2>/dev/null
 touch "$enumx_dir"/creds
 sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+touch "$enumx_dir"/domains
+sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 
 
 # Enter usernames and passwords if creds parameter is selected
@@ -126,6 +128,11 @@ for port in $open_ports; do
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
             nmap $target -p"$port" --host-timeout 3s -T5 | grep -vE 'Nmap|latency|nmap' | sed '1d'
+            if [ -s "$enumx_dir/domains" ]; then
+                for domain in $(cat "$enumx_dir/domains"); do
+                    PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target"
+                done
+            fi
             ;;
         110)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-pop
@@ -154,6 +161,7 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"              
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
@@ -219,6 +227,7 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$shares" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | sed 's/:/ /')
                 echo "$credu:$credp" | tee -a "$enumx_dir/creds"
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
+                echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"              
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
                 echo
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
