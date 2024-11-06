@@ -95,7 +95,8 @@ fi
 
 rm "$enumx_dir/.hashes" 2>/dev/null
 crack() {
-    echo 'Attempting to crack the hash within 15 seconds each...'
+	echo
+    echo 'Attempting to crack hashes within 15 seconds each hash...'
     for hash in $(cat "$enumx_dir"/.hashes); do
         echo "$hash" > "$enumx_dir"/.hash
         john "$enumx_dir"/.hash -w=/usr/share/wordlists/rockyou.txt --max-run-time=15 --pot="$enumx_dir"/john.pot 2>/dev/null | grep -viE 'loaded|FAQ'
@@ -108,7 +109,7 @@ crack() {
 }
 
 # Scan for open ports using nmap
-open_ports=$(nmap --open --min-rate 10000 "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
+open_ports=$(nmap -p- --open --min-rate 10000 "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
 
 # By default commands are taken from book.hacktricks.xyz plus added to by community updates
 # Test each open port using pentesting techniques.
@@ -210,7 +211,7 @@ for port in $open_ports; do
    		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
- 	            	echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
+ 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'read|write' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//'
  	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
@@ -278,7 +279,7 @@ for port in $open_ports; do
    		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
- 	            	echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]|[-]'
+ 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'read|write' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//'
  	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
