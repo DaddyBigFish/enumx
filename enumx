@@ -209,14 +209,13 @@ for port in $open_ports; do
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
    		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
    		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
-                    list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
- 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'read|write' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//'
+ 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//' | tee -a "$enumx_dir/shares"
  	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
- 	                for share in "${list_shares[@]}"; do
+                    for share in $(cat "$enumx_dir"/shares); do
  	                    echo "Authenticating as $credu:$credp on share $share..."
  	                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
  	                done
@@ -277,14 +276,13 @@ for port in $open_ports; do
    		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
    		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
    		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
-                    list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
- 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'read|write' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//'
+ 	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//' | tee -a "$enumx_dir/shares"
  	                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
- 	                for share in "${list_shares[@]}"; do
+                    for share in $(cat "$enumx_dir"/shares); do
  	                    echo "Authenticating as $credu:$credp on share $share..."
  	                    smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
  	                done
