@@ -217,8 +217,8 @@ for port in $open_ports; do
  	                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
+                    echo "Enumerating with nxc modules as $credu:$credp on $target..."
  	                while IFS= read -r module; do
- 	                    echo "Running nxc modules as $credu:$credp on $target..."
  	                    netexec smb "$target" -u "$credu" -p "$credp" -M "$module" | grep -viE '[*]'
  	                    echo
  	                done < "$enumx_dir/modules" 	                
