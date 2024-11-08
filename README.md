@@ -23,7 +23,6 @@ sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp john ldap-util
 # Usage
 ```
 enumx <TARGET> | tee enumx-output.txt
-enumx <TARGET> creds
 enumx <TARGET> web
 enumx <TARGET> crack
 enumx update
