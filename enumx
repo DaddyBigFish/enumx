@@ -92,7 +92,10 @@ if [[ "$2" == "crack" ]]; then
     echo "$cracked" | sed -E 's/.*:()/\1/' | tee -a "$enumx_dir"/passwords
     exit 1
 fi
-
+# Enter usernames and passwords if creds parameter is selected
+if [[ "$2" == "web" ]]; then
+  using_web=true
+fi
 rm "$enumx_dir/.hashes" 2>/dev/null
 crack() {
 	echo
@@ -129,7 +132,7 @@ for port in $open_ports; do
             done
             echo
             echo -e "Authors / Creators of files found:"
-            exiftool "$enumx_dir"/ftp/* | grep -v 'Tool' | grep -E 'Author|Creator' | awk '{print $3}' | sort -u
+            exiftool "$enumx_dir"/ftp/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u
             ;;
         22)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ssh
@@ -157,6 +160,18 @@ for port in $open_ports; do
             echo
             curl -Iks "http://$target:$port" 2>/dev/null
             wafw00f "http://$target:$port" 2>/dev/null
+            if [ "$using_web" == true ]; then
+            	mkdir -p "$enumx_dir"/web 2>/dev/null
+            	echo 'Enumerating web directories for available files...'
+            	feroxbuster -u http://"$target" -s 200 -t100 -w /usr/share/seclists/Discovery/Web-Content/raft-small-directories-lowercase.txt --silent --no-state > "$enumx_dir/urls"
+            	cat "$enumx_dir/urls" | sort -u | sed '1d' | sed '1d' | tee "$enumx_dir/urls"
+            	while IFS= read -r url; do
+            		curl -o "$enumx_dir/web/$(basename "$url")" "$url" 2>/dev/null
+            	done < "$enumx_dir/urls"
+            	echo
+            	echo -e "Authors / Creators of files found:"
+            	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u
+           	fi
             ;;
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
@@ -273,6 +288,18 @@ for port in $open_ports; do
             echo | openssl s_client -connect "$target:$port" -servername "$target" 2>/dev/null | openssl x509 -text | grep 'CN=' | awk -F 'CN=|,' '{print $2}' | grep -viE 'DC|-'
             echo | openssl s_client -connect "$target:$port" -servername "$target" 2>/dev/null | openssl x509 -outform PEM
             wafw00f "https://$target:$port" 2>/dev/null
+            if [ "$using_web" == true ]; then
+              	mkdir -p "$enumx_dir"/web 2>/dev/null
+            	echo 'Enumerating web directories for available files...'
+            	feroxbuster -u https://"$target" -s 200 -t100 -w /usr/share/seclists/Discovery/Web-Content/raft-small-directories-lowercase.txt --silent --no-state > "$enumx_dir/urls"
+            	cat "$enumx_dir/urls" | sort -u | sed '1d' | sed '1d' | tee "$enumx_dir/urls"
+            	while IFS= read -r url; do
+            		curl -o "$enumx_dir/web/$(basename "$url")" "$url" 2>/dev/null
+            	done < "$enumx_dir/urls"
+           	fi
+          	echo
+           	echo -e "Authors / Creators of files found:"
+           	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
@@ -443,11 +470,11 @@ for port in $open_ports; do
             ;;
         5985)
             # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
-            wmic /node:"$target" process call create "powershell enable-psremoting -force"
+            curl -I http://"$target":"$port"
             ;;
         5986)
             # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
-            wmic /node:"$target" process call create "powershell enable-psremoting -force"
+            curl -I http://"$target":"$port"
             ;;
         6000)
             nmap -sV --script x11-access -p "$port" "$target"
