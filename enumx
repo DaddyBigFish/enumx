@@ -163,6 +163,7 @@ for port in $open_ports; do
             wafw00f "http://$target:$port" 2>/dev/null
             if [ "$using_web" == true ]; then
             	mkdir -p "$enumx_dir"/web 2>/dev/null
+            	echo
             	echo 'Enumerating web directories for available files...'
             	feroxbuster -u http://"$target" -s 200 -t100 -w /usr/share/seclists/Discovery/Web-Content/raft-small-directories-lowercase.txt --silent --no-state > "$enumx_dir/urls"
             	cat "$enumx_dir/urls" | sort -u | sed '1d' | sed '1d' | tee "$enumx_dir/urls"
@@ -171,7 +172,7 @@ for port in $open_ports; do
             	done < "$enumx_dir/urls"
             	echo
             	echo -e "Authors / Creators of files found:"
-            	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u
+            	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u 2>/dev/null
            	fi
             ;;
         88)
@@ -291,6 +292,7 @@ for port in $open_ports; do
             wafw00f "https://$target:$port" 2>/dev/null
             if [ "$using_web" == true ]; then
               	mkdir -p "$enumx_dir"/web 2>/dev/null
+              	echo
             	echo 'Enumerating web directories for available files...'
             	feroxbuster -u https://"$target" -s 200 -t100 -w /usr/share/seclists/Discovery/Web-Content/raft-small-directories-lowercase.txt --silent --no-state > "$enumx_dir/urls"
             	cat "$enumx_dir/urls" | sort -u | sed '1d' | sed '1d' | tee "$enumx_dir/urls"
@@ -300,7 +302,7 @@ for port in $open_ports; do
            	fi
           	echo
            	echo -e "Authors / Creators of files found:"
-           	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u
+           	exiftool "$enumx_dir"/web/* | grep -v 'Tool' | grep -E 'Author|Creator' | sed -E 's/.*:\s*(.*)/\1/' | sort -u 2>/dev/null
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
