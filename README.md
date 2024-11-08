@@ -30,7 +30,7 @@ enumx update
 enumx install
 ```
 # About
-My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘢 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘮𝘢𝘤𝘩𝘪𝘯𝘦).
+My tool 𝗲𝗻𝘂𝗺𝘅 is now available (𝘥𝘦𝘮𝘰𝘯𝘴𝘵𝘳𝘢𝘵𝘦𝘥 𝘩𝘦𝘳𝘦 𝘸𝘪𝘵𝘩 𝘏𝘢𝘤𝘬 𝘛𝘩𝘦 𝘉𝘰𝘹 𝘳𝘦𝘵𝘪𝘳𝘦𝘥 𝘮𝘢𝘤𝘩𝘪𝘯𝘦s).
 
 The tool 𝗲𝗻𝘂𝗺𝘅 is a framework that uses a plethora of existing tools as plugins in order to simplify and standardize the enumeration stage at a simplistic level. It is designed to automate the simpler tasks of enumeration in order to save the Penetration Tester valuable time. The goal with 𝗲𝗻𝘂𝗺𝘅 is that, after identifying what protocols are open and available, the tool will make varying enumerations by default based on well renown HackTricks and Exploit Notes knowledge bases and will also include more as the tool continues to develop.
 
@@ -39,7 +39,7 @@ The future for the tool will include many more features such as utilizing known 
 Feel free to contribute to the project as there is so much more to come. You are more than welcome!
 
 # Examples
-This information is for demonstration purposes and is a Hack The Box retired machine.
+This information is for demonstration purposes and taken from Hack The Box retired machines.
 
 ![image](https://github.com/user-attachments/assets/5bb095ca-35ff-4496-9de7-632a8b0d335d)
 ![image](https://github.com/user-attachments/assets/e29613b8-7cd4-4e55-a4dd-243cca4be4c7)
