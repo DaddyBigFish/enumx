@@ -12,9 +12,9 @@
 ```
 # Install
 ```
-git clone https://github.com/DaddyBigFish/enumx.git ~/.git/enumx
-chmod +x ~/.git/enumx/enumx
-sudo ln -s ~/.git/enumx/enumx /usr/local/bin/enumx
+git clone https://github.com/DaddyBigFish/enumx.git /dev/.git/enumx
+chmod +x /dev/.git/enumx/enumx
+sudo ln -s /dev/.git/enumx/enumx /usr/local/bin/enumx
 ```
 # Pre-required tools (Kali Linux / Debian)
 ```
