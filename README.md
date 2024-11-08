@@ -46,7 +46,7 @@ This information is for demonstration purposes and taken from Hack The Box retir
 ![image](https://github.com/user-attachments/assets/fc7bc558-2ab6-4bff-ae09-6356f5da8c2f)
 ![image](https://github.com/user-attachments/assets/5bf5a24f-74a4-49f6-aeeb-3e64b28ae8d6)
 ![image](https://github.com/user-attachments/assets/e43c34b9-7ccb-476c-be75-4244659fefc4)
-![image](https://github.com/user-attachments/assets/9eec73a4-141d-454b-ab2e-139dd5ded762)
+![image](https://github.com/user-attachments/assets/6b53676d-09a7-4aa5-9a25-b5796fc95c74)
 ![image](https://github.com/user-attachments/assets/d59ca568-6182-423f-a038-74139f8f1983)
 ![image](https://github.com/user-attachments/assets/327ef258-869b-4d3d-8649-a85260a0eb77)
 ![image](https://github.com/user-attachments/assets/94526baf-9c6d-41b4-874f-40dcb7f13584)
