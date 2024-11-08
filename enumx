@@ -22,6 +22,7 @@ if [ -z "$1" ]; then
     echo "  Examples:"
     echo "    enumx <TARGET>                - Run enumeration on the specified target."
     echo "    enumx <TARGET> creds          - Run enumeration on the specified target using specific usernames and passwords."
+    echo "    enumx <TARGET> web            - Run web enumeration on the specified target."
     echo "    enumx <TARGET> crack          - Attempt to quickly crack each hash within 15 seconds."
     echo "    enumx update                  - Update to the latest version of enumx."
     echo "    enumx install                 - Install the pre-required tools for enumx (Kali Linux / Debian)."
