@@ -97,6 +97,7 @@ if [[ "$1$2" == "$target" ]]; then
 fi
 # Attempt to quickly crack each hash within 15 seconds.
 if [[ "$2" == "crack" ]]; then
+    echo 'Cracking hashes in hashes file. This can take some time...'
     echo 'Attempting to crack each hash within 15 seconds...'
     for hash in $(cat "$enumx_dir"/hashes); do
         echo "$hash" > "$enumx_dir"/.hash
