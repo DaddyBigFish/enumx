@@ -12,7 +12,7 @@ cat << "EOF"
  --------------   ----------------------       
 EOF
 # Required tools to be pre-installed:
-#  cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl
+#  bloodhound.py cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl
 #  mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap
 #  odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind
 #  smbclient tree wafw00f whatweb wordlists
@@ -40,7 +40,7 @@ fi
 # Install the pre-required tools for enumx (Kali Linux / Debian)
 if [[ "$1" == "install" ]]; then
     echo 'Installing pre-required tools for enumx (Kali Linux / Debian)...'
-    sudo apt install -y cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
+    sudo apt install -y bloodhound.py cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
     gunzip /usr/share/wordlists/rockyou.txt.gz 2>/dev/null
     echo 'Install complete.'
     exit 1
@@ -279,10 +279,30 @@ for port in $open_ports; do
         389)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-ldap
             ldapsearch -H "ldap://$target" -x -s base dnshostname | grep -i 'dnshostname' | awk '{print $2}' | grep -vi 'requesting:' | tee -a "$enumx_dir/domains"
+			sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
             echo
             ldapsearch -H "ldap://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
             nmap --script "ldap* and not brute" -p "$port" "$target" | grep -Ei 'uid:|NTPassword' | awk '{print $3}'
-            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency|supported' 
+            nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency|supported'
+            while IFS= read -r cred; do
+                read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+                if [ -n "$credp" ]; then
+                    mkdir -p "$enumx_dir"/bloodhound 2>/dev/null
+                        rm "$enumx_dir"/*.json 2>/dev/null
+                        rm "$enumx_dir/bloodhound"/*.json 2>/dev/null
+                        echo "Enumerating with bloodhound-python as $credu:$credp..."
+                            while IFS= read -r domain; do
+                                while IFS= read -r dc; do
+                                    bloodhound-python -c default -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
+                                    bloodhound-python -c all -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
+                                    sort -u "$enumx_dir"/output -o "$enumx_dir"/output 2>/dev/null
+                                done < "$enumx_dir/domains"
+                            done < "$enumx_dir/domains"
+                            mv *.json "$enumx_dir/bloodhound" 2>/dev/null
+                            rm "$enumx_dir"/*.json 2>/dev/null
+                            tree "$enumx_dir/bloodhound" 2>/dev/null
+                fi
+            done < "$enumx_dir/creds"
             ;;
         443)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-web          
@@ -376,6 +396,25 @@ for port in $open_ports; do
             LDAPTLS_REQCERT=never ldapsearch -H "ldaps://$target" -x -s base namingcontexts | grep -i 'namingcontexts' | awk '{print $2}' | grep -vi 'requesting:'
             nmap --script "ldap* and not brute" -p "$port" "$target" | grep -iE 'uid:|NTPassword' | awk '{print $3}'
             nmap --script "ldap* and not brute" -p "$port" "$target" | grep -viE 'Nmap|latency|supported'
+            while IFS= read -r cred; do
+                read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+                if [ -n "$credp" ]; then
+                    mkdir -p "$enumx_dir"/bloodhound 2>/dev/null
+                        rm "$enumx_dir"/*.json 2>/dev/null
+                        rm "$enumx_dir/bloodhound"/*.json 2>/dev/null
+                        echo "Enumerating with bloodhound-python as $credu:$credp..."
+                            while IFS= read -r domain; do
+                                while IFS= read -r dc; do
+                                    bloodhound-python -c default -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
+                                    bloodhound-python -c all -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
+                                    sort -u "$enumx_dir"/output -o "$enumx_dir"/output 2>/dev/null
+                                done < "$enumx_dir/domains"
+                            done < "$enumx_dir/domains"
+                            mv *.json "$enumx_dir/bloodhound" 2>/dev/null
+                            rm "$enumx_dir"/*.json 2>/dev/null
+                            tree "$enumx_dir/bloodhound" 2>/dev/null
+                fi
+            done < "$enumx_dir/creds"
             ;;
         993)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
