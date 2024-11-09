@@ -233,11 +233,11 @@ for port in $open_ports; do
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
             sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
             rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
             sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox'
+       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied'
        		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
        		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
 	        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
@@ -252,7 +252,7 @@ for port in $open_ports; do
             	sort -u "$enumx_dir"/shares -o "$enumx_dir"/shares 2>/dev/null
                 echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
                 echo "$ridbrute" | grep -viE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
-                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
                 sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
                 if [ -n "$credp" ]; then
                     echo "Using netexec modules as $credu:$credp on $target..."
@@ -310,11 +310,11 @@ for port in $open_ports; do
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
             echo "Enumerating port $port can take some time please wait..."
             mkdir -p "$enumx_dir"/smb 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
             sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
             rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
             sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox'
+       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied'
        		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
        		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
 	        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
@@ -329,7 +329,7 @@ for port in $open_ports; do
             	sort -u "$enumx_dir"/shares -o "$enumx_dir"/shares 2>/dev/null
                 echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
                 echo "$ridbrute" | grep -viE '[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
-                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox' | tee -a "$enumx_dir/usernames"
+                echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
                 sort -u "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
                 if [ -n "$credp" ]; then
                     echo "Using netexec modules as $credu:$credp on $target..."
