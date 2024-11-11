@@ -31,6 +31,7 @@ fi
 if [[ "$1" == "update" ]]; then
     echo '     Updating to latest version...'
     rm -rf ~/.git/enumx 2>/dev/null
+    rm -rf /usr/local/bin/enumx 2>/dev/null
     git clone https://github.com/DaddyBigFish/enumx.git ~/.git/enumx 2>/dev/null
     chmod +x ~/.git/enumx/enumx 2>/dev/null
     sudo ln -s ~/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
@@ -41,7 +42,9 @@ fi
 if [[ "$1" == "install" ]]; then
     echo 'Installing pre-required tools for enumx (Kali Linux / Debian)...'
     sudo apt install -y bloodhound.py cups curl dnsutils faketime git influxdb inetutils-ftp john ldap-utils libimage-exiftool-perl libkrb5-dev mariadb-server metasploit-framework nano nbtscan netcat-openbsd netexec nfs-common nmap odat openssh-client openssl postgresql postgresql-contrib python3-impacket rpcbind smbclient tree wafw00f whatweb wordlists
-    pip3 install powerview --break-system-packages
+    echo
+    echo 'powerview.py installing required packages.'
+    pip3 install powerview --break-system-packages | grep -viE 'already satisfied'
     gunzip /usr/share/wordlists/rockyou.txt.gz 2>/dev/null
     echo 'Install complete.'
     exit 1
