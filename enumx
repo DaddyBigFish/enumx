@@ -31,10 +31,9 @@ fi
 if [[ "$1" == "update" ]]; then
     echo '     Updating to latest version...'
     rm -rf ~/.git/enumx 2>/dev/null
-    rm -rf /usr/local/bin/enumx 2>/dev/null
     git clone https://github.com/DaddyBigFish/enumx.git ~/.git/enumx 2>/dev/null
     chmod +x ~/.git/enumx/enumx 2>/dev/null
-    sudo ln -s ~/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
+    sudo rm -rf /usr/local/bin/enumx 2>/dev/null; sudo ln -s ~/.git/enumx/enumx /usr/local/bin/enumx 2>/dev/null
     echo '     Update complete.'
     exit 1
 fi
