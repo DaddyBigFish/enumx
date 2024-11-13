@@ -24,7 +24,6 @@ enumx install
 ```
 enumx <TARGET>
 enumx <TARGET> web
-enumx <TARGET> crack
 enumx update
 ```
 # About
