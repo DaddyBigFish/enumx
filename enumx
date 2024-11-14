@@ -340,7 +340,7 @@ for port in $open_ports; do
                 if [ -n "$credp" ]; then
  	            	rm -rf "$enumx_dir/bloodhound" 2>/dev/null
  	            	rm "$enumx_dir"/*.json 2>/dev/null
-                    mkdir -p "$enumx_dir"/bloodhound/"$credu" 2>/dev/null
+                    mkdir -p "$enumx_dir/bloodhound/$credu" 2>/dev/null
                     echo "Enumerating with bloodhound-python as $credu:$credp..."
                         while IFS= read -r domain; do
                             while IFS= read -r dc; do
@@ -351,7 +351,7 @@ for port in $open_ports; do
                         done < "$enumx_dir/domains"
                     mv "$enumx_dir"/*.json "$enumx_dir/bloodhound/$credu" 2>/dev/null
                     rm "$enumx_dir"/*.json 2>/dev/null
-                    tree "$enumx_dir/bloodhound" 2>/dev/null
+                    tree "$enumx_dir/bloodhound/$credu" 2>/dev/null
                 fi
             done < "$enumx_dir/creds"
             if [ -s "$enumx_dir/.hashes" ]; then
