@@ -300,6 +300,11 @@ for port in $open_ports; do
         135)
             # https://book.hacktricks.xyz/network-services-pentesting/135-pentesting-msrpc
             impacket-rpcdump -p "$port" "$target" | grep -E 'Protocol|Provider' | grep -vE 'N/A|Interface' | awk '{print $2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20}' | grep -E 'Remote'
+			rpcclient -c "enumdomusers"  -U "" "$target" --no-pass | sed -E 's/user:\[//' | sed 's/\] .*//' | tee -a "$enumx_dir/usernames"
+			sort -fu "$enumx_dir/usernames" -o "$enumx_dir/usernames" 2>/dev/null
+            rpcclient -c "enumdomgroups" -U "" "$target" --no-pass
+            rpcclient -c "lsaquery" -U "" "$target" --no-pass
+            rpcclient -c "querydispinfo"  -U "" "$target" --no-pass | grep -vE 'Desc: \(null\)' | sed 's/.*Account:/Account:/'
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
@@ -310,14 +315,15 @@ for port in $open_ports; do
 				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
-	          	while IFS= read -r user; do
-	          		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
-	          		echo "$shares"
- 	          		echo ""
-	          		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
-					sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-	            	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
-            	done < "$enumx_dir/usernames"
+				if [ -n "$spray" ]; then
+			      	while IFS= read -r user; do
+			      		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+			      		echo "$shares"
+			      		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+						sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+			        	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+		        	done < "$enumx_dir/usernames"
+		        fi
 			fi       		
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
@@ -331,8 +337,6 @@ for port in $open_ports; do
 			fi
             tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
-            echo
-            nbtscan "$target"/24
             ;;
         143)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-imap
@@ -385,14 +389,14 @@ for port in $open_ports; do
 				hspray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -H "$enumx_dir/hashes" --continue-on-success | sed 's/.*\\//1' | grep -viE 'guest|_failure|domain:|invalid' 2>/dev/null)
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
-	          	while IFS= read -r user; do
-	          		shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
-	          		echo "$shares"
-	          		echo ""
-	          		echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
-					sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-	            	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
-            	done < "$enumx_dir/usernames"
+				netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
+	          	#while IFS= read -r user; do
+	          	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
+	          	#	echo "$shares"
+	          	#	echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' >> "$enumx_dir/shares"
+				#	sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
+	            #	smb_enum "$target" "$port" "anonymous" "$enumx_dir" "$user"
+            	#done < "$enumx_dir/usernames"
 			fi       		
 			if [ -s "$enumx_dir/creds" ]; then
 				ph='-p'
@@ -406,8 +410,6 @@ for port in $open_ports; do
 			fi
             tree "$enumx_dir"/smb 2>/dev/null
             find "$enumx_dir"/smb -type f 2>/dev/null
-            echo
-            nbtscan "$target"/24
             ;;
         465)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smtp
