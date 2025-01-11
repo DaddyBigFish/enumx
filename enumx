@@ -651,8 +651,8 @@ if [ -n "$enumx_dir/creds" ]; then
 			echo -e "Enumerating as $credu:$credp..."
 		        while IFS= read -r domain; do
 		            while IFS= read -r dc; do
-		                bloodhound-python -c default -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
-		                bloodhound-python -c all -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> output
+		                cd "$enumx_dir"; bloodhound-python -c default -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> "$enumx_dir"/output
+		                cd "$enumx_dir"; bloodhound-python -c all -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> "$enumx_dir"/output
 		                sort -u "$enumx_dir"/output -o "$enumx_dir"/output 2>/dev/null
 		            done < "$enumx_dir/domains"
 		        done < "$enumx_dir/domains"
