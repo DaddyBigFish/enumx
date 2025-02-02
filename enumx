@@ -185,6 +185,22 @@ smb_enum() {
 	fi
 }
 
+scan_udp(){
+    open_ports=$(nmap -p- -sU --open --min-rate 10000 -T 5 "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
+    for port in $open_ports; do
+        echo -e "\n━━━━━━━━━━━━━━━━━━━━━━━━━ UDP PORT: $port"
+        case $port in
+            161)
+                mkdir -p "$enumx_dir"/snmp
+                echo -e "[+] SNMP found. \nOutput in $enumx_dir/snmp/public-channel-scan and $enumx_dir/snmp/public-channel-strings"
+                snmpwalk -v2c -c public $target > "$enumx_dir"/snmp/public-channel-scan
+                snmpwalk -v2c -c public $target |grep STRING| sed 's/^.*: "//g'|sed 's/"$//g' |tee "$enumx_dir"/snmp/public-channel-strings
+            ;;
+        esac
+    done
+}
+
+scan_udp &
 
 # Scan for open ports using nmap
 open_ports=$(nmap -p- --open --min-rate 10000 "$target" | awk '{print $1}' | grep '/' | sed 's#/.*##' | sort -n)
@@ -678,3 +694,6 @@ if [ -n "$enumx_dir/creds" ]; then
 		fi
 	done < "$enumx_dir/creds"
 fi
+
+# Waiting for the udp scan to finish
+wait
